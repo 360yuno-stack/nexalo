@@ -1,0 +1,121 @@
+(... continuación desde Modelo de Valor)
+
+**Precio esperado:**
+- Inicial: $0.05
+- Año 1: $0.10-0.20
+- Año 2: $0.30-0.50
+- Año 3+: $0.50-1.00
+
+**Factores de crecimiento:**
+- ↓ Supply (deflación)
+- ↑ Demanda (usuarios nuevos)
+- ↑ Treasury DAO value
+- ↑ Utilidad (staking, governance)
+
+---
+
+## 7. Comparación Competitiva
+
+| Feature | NEXALO | PoolTogether | Lossless Lottery | Winr |
+|---------|--------|--------------|------------------|------|
+| **Prize Model** | Fixed jackpot | Variable | Variable | Fixed |
+| **Token** | Deflacionario | No | Infla | Fijo |
+| **Distribución** | 100% auto | Manual | Manual | Auto |
+| **Multinivel** | ✅ 3 niveles | ❌ | ❌ | ❌ |
+| **Treasury** | ✅ BTC | ❌ | ❌ | ❌ |
+| **Vesting** | ✅ 2 años | ❌ | ❌ | Variable |
+| **Aleatoriedad** | Chainlink VRF | Chainlink | Block hash | VRF |
+| **Autonomía** | 100% | Parcial | Parcial | Parcial |
+
+**Ventaja diferencial:** Distribución automática + Token deflacionario + Treasury BTC
+
+---
+
+## 8. Riesgos y Mitigaciones
+
+### 8.1 Riesgos Técnicos
+
+| Riesgo | Probabilidad | Impacto | Mitigación |
+|--------|--------------|---------|------------|
+| Smart contract bug | Media | Alto | Auditoría + Tests + Pausa emergencia |
+| Chainlink VRF falla | Baja | Alto | Fallback manual por owner |
+| Gas spike en BSC | Media | Bajo | Ajuste de gas limit dinámico |
+| Front-running | Media | Medio | VRF evita manipulación |
+
+### 8.2 Riesgos Económicos
+
+| Riesgo | Probabilidad | Impacto | Mitigación |
+|--------|--------------|---------|------------|
+| Baja adopción | Media | Alto | Marketing + Incentivos |
+| Precio NXL colapsa | Media | Medio | Buyback + Burning |
+| Ballenas manipulan | Baja | Medio | Límites por wallet (futuro) |
+| Competencia | Alta | Medio | Innovación continua |
+
+### 8.3 Riesgos Regulatorios
+
+| Riesgo | Probabilidad | Impacto | Mitigación |
+|--------|--------------|---------|------------|
+| Ban de loterías crypto | Baja | Alto | Multi-chain deployment |
+| KYC requerido | Media | Medio | Adaptar si es necesario |
+| Tax sobre ganancias | Alta | Bajo | Responsabilidad del usuario |
+
+---
+
+## 9. Auditoría
+
+### 9.1 Presupuesto: $3,000 USD
+
+**Opciones de Auditores Anónimos:**
+
+#### **Opción 1: Techrate** ⭐ RECOMENDADO
+- **Precio:** $1,500 - $2,500
+- **Tiempo:** 5-10 días
+- **Incluye:**
+  - Full smart contract audit
+  - Security report público
+  - Badge certificado
+  - Re-audit gratis si hay cambios menores
+- **Contacto:** https://techrate.org
+- **Anonimato:** ✅ Sí (no requieren KYC)
+
+#### **Opción 2: Solidity Finance**
+- **Precio:** $2,000 - $3,000
+- **Tiempo:** 7-14 días
+- **Incluye:**
+  - Community audit
+  - Report detallado
+  - GitHub badge
+- **Contacto:** https://solidity.finance
+- **Anonimato:** ✅ Sí
+
+#### **Opción 3: RugDoc (Community)**
+- **Precio:** $500 - $1,500
+- **Tiempo:** 3-7 días
+- **Incluye:**
+  - Basic audit
+  - Community review
+  - Score público
+- **Contacto:** https://rugdoc.io
+- **Anonimato:** ✅ Sí
+
+### 9.2 Alcance de Auditoría
+
+**Contratos a auditar:**
+1. NXLToken.sol (~200 líneas)
+2. NexumManager.sol (~450 líneas)
+3. ReferralNetwork.sol (~150 líneas)
+4. AmbassadorRegistry.sol (~100 líneas)
+5. TreasuryBTC.sol (~80 líneas)
+6. BuybackContract.sol (~80 líneas)
+
+**Total:** ~1,060 líneas de código
+
+**Áreas críticas:**
+- ✅ Distribución de fondos (100% matemático)
+- ✅ Chainlink VRF implementation
+- ✅ Reentrancy protection
+- ✅ Access control
+- ✅ Vesting logic
+
+### 9.3 Timeline Post-Auditoría
+

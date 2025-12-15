@@ -1,0 +1,31 @@
+
+## 🔒 Seguridad
+
+### Medidas Implementadas
+
+✅ **ReentrancyGuard** en todas las funciones críticas
+✅ **Access Control** (Ownable, onlyManager)
+✅ **Validaciones de entrada** estrictas
+✅ **Pausa de emergencia** por el owner
+✅ **Immutable addresses** para prevenir cambios
+✅ **Chainlink VRF** para aleatoriedad verificable
+✅ **Protección contra ciclos** en referidos
+✅ **SafeTransfer** en todas las transferencias
+
+### Vectores de Ataque Mitigados
+
+- ✅ Reentrancy
+- ✅ Integer overflow/underflow (Solidity ^0.8.20)
+- ✅ Front-running en selección de ganador (VRF)
+- ✅ Manipulación de referidos
+- ✅ Drenaje de fondos (distribución automática)
+
+## ⚡ Optimización de Gas
+
+- **Compra promedio:** ~150,000 gas
+- **Uso de `immutable`** para variables constantes
+- **Minimización de storage operations**
+- **Batch operations** donde es posible
+
+## 📈 Métricas del Test
+

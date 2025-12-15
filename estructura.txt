@@ -1,0 +1,21 @@
+nexalo/
+├── contracts/              # Contratos Solidity
+│   ├── NXLToken.sol
+│   ├── NexumManager.sol
+│   ├── TreasuryBTC.sol
+│   ├── ReferralNetwork.sol
+│   ├── AmbassadorRegistry.sol
+│   └── DonationVault.sol
+├── frontend/               # Aplicación Web
+│   ├── index.html
+│   ├── css/
+│   │   └── styles.css
+│   └── js/
+│       ├── main.js
+│       ├── web3-integration.js
+│       └── animations.js
+├── scripts/                # Scripts de despliegue
+│   ├── deploy.js
+│   └── test.js
+├── hardhat.config.js
+└── package.json

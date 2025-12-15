@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXALO - Sistema Autónomo de Lotería Descentralizada</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    
+    <style>
+        * { box-sizing: border-box; }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #0a0a15 100%);
+            min-height: 100vh;
+        }
+        .font-mono { font-family: 'Space Mono', monospace; }
+        .neon-text {
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.6), 0 0 20px rgba(0, 255, 65, 0.4), 0 0 30px rgba(0, 255, 65, 0.2);
+        }
+        .neon-border {
+            border: 1px solid rgba(0, 255, 65, 0.4);
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.15);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0, 255, 65, 0.25);
+        }
+        
+        @keyframes pulsePrize {
+            0%, 100% { transform: scale(1); text-shadow: 0 0 20px currentColor; }
+            50% { transform: scale(1.15); text-shadow: 0 0 30px currentColor, 0 0 60px currentColor; }
+        }
+        .prize-amount {
+            animation: pulsePrize 2.5s ease-in-out infinite;
+            font-weight: 900;
+            letter-spacing: 2px;
+        }
+        
+        .prize-flash { color: #00FF41; }
+        .prize-original { color: #FFD700; }
+        .prize-premium { color: #A855F7; }
+        .prize-elite { color: #00F3FF; }
+        .prize-vip { color: #FF1493; }
+        .prize-blackblok { color: #FF6600; }
+
+        .nexum-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        @media (max-width: 1024px) {
+            .nexum-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        
+        @media (max-width: 640px) {
+            .nexum-grid { grid-template-columns: 1fr; }
+        }
+
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            backdrop-filter: blur(10px);
+        }
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
+            border: 2px solid #00FF41;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .number-input {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #00FF41;
+            color: #00FF41;
+            font-family: 'Space Mono', monospace;
+            font-size: 3rem;
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            width: 100%;
+            letter-spacing: 10px;
+        }
+        .number-input:focus {
+            outline: none;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+        }
+        .selected-numbers {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .selected-number {
+            background: rgba(0, 255, 65, 0.2);
+            border: 1px solid #00FF41;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: 'Space Mono', monospace;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .selected-number button {
+            background: red;
+            color: white;
+            border: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-gray-100">
+    
+    <!-- MODAL SELECCIÓN DE NÚMEROS -->
+    <div id="number-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-3xl font-black text-[#00FF41] mb-6 text-center" id="modal-title">SELECCIONA TUS NÚMEROS</h2>
+            
+            <div class="mb-6">
+                <p class="text-gray-400 mb-3 text-center">Ingresa los números que deseas</p>
+                <input type="text" id="number-input" class="number-input" placeholder="0000" maxlength="4">
+                <p class="text-xs text-gray-500 mt-2 text-center" id="number-format">Formato: 0000 a 9999</p>
+            </div>
+
+            <div class="mb-6">
+                <button onclick="addNumber()" class="w-full bg-gradient-to-r from-[#00FF41] to-[#00cc33] text-black py-3 rounded-lg font-black text-lg hover:scale-105 transition">
+                    ➕ AGREGAR NÚMERO
+                </button>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-[#00FF41] mb-3">Números Seleccionados (<span id="selected-count">0</span>):</h3>
+                <div id="selected-numbers-container" class="selected-numbers min-h-[100px] bg-black/40 p-4 rounded-lg">
+                    <p class="text-gray-500 text-center w-full">Ningún número seleccionado</p>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="closeModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-bold transition">
+                    ❌ CANCELAR
+                </button>
+                <button onclick="confirmPurchase()" class="flex-1 bg-gradient-to-r from-[#00FF41] to-[#00cc33] text-black py-3 rounded-lg font-black hover:scale-105 transition">
+                    ✅ CONFIRMAR
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Price Ticker -->
+    <div class="bg-black/70 border-b border-gray-800 py-3 overflow-hidden">
+        <div class="flex space-x-12 animate-pulse px-6 justify-center">
+            <div class="flex items-center space-x-3">
+                <span class="text-gray-400 font-bold">BTC</span>
+                <span class="text-green-400 font-mono text-lg">$43,250</span>
+                <span class="text-green-400 text-sm">+2.45%</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="text-gray-400 font-bold">NXL</span>
+                <span class="text-[#00FF41] font-mono text-lg font-black">$0.05</span>
+                <span class="text-green-400 text-sm font-bold">+15.2%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-black/50 backdrop-blur-xl border-b border-gray-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
+            <div class="flex items-center space-x-4 cursor-pointer" onclick="showSection('home')">
+                <div class="w-14 h-14 bg-gradient-to-br from-[#00FF41] to-[#00cc33] rounded-xl flex items-center justify-center shadow-lg">
+                    <span class="text-3xl">⚡</span>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-black font-mono neon-text text-[#00FF41]">NEXALO</h1>
+                    <p class="text-xs text-gray-400 font-semibold tracking-wide">Fair Rewards. Real Value.</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex space-x-6 text-base">
+                <a href="#" onclick="showSection('home'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Nexum</a>
+                <a href="#" onclick="showSection('account'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Mi Cuenta</a>
+                <a href="#" onclick="showSection('ambassadors'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Embajadores</a>
+                <a href="#" onclick="showSection('staking'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Staking</a>
+                <a href="#" onclick="showSection('videos'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Videos</a>
+                <a href="#" onclick="showSection('tokenomics'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Tokenomics</a>
+            </nav>
+            <div class="flex items-center space-x-4">
+                <button id="walletConnect" class="bg-gradient-to-r from-[#00FF41] to-[#00cc33] text-black px-8 py-3 rounded-xl font-black text-lg hover:scale-105 transition shadow-xl">
+                    💼 <span id="walletText">Conectar</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- HOME SECTION -->
+    <div id="home-section" class="section active">
+        <!-- Hero Section -->
+        <section class="py-24 px-6">
+            <div class="max-w-7xl mx-auto text-center">
+                <h2 class="text-7xl font-black font-mono mb-8 leading-tight">
+                    <span class="neon-text text-[#00FF41]">NEXALO</span>
+                    <br>
+                    <span class="text-5xl bg-gradient-to-r from-gray-100 to-gray-400 bg-clip-text text-transparent">Sistema Autónomo de Lotería Descentralizada</span>
+                </h2>
+                <p class="text-2xl text-gray-300 max-w-4xl mx-auto mb-12 leading-relaxed">
+                    Participa en sorteos 100% transparentes verificados en blockchain. Elige tus números de la suerte y recibe tokens NXL automáticamente.
+                </p>
+                
+                <!-- BOTÓN DESTACADO PARA NO-CRYPTO -->
+                <div class="mb-8">
+                    <button onclick="showNoCryptoGuide()" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-12 py-5 rounded-xl font-black text-2xl hover:scale-110 transition shadow-2xl border-2 border-blue-300">
+                        🚀 COMPRA SIN WALLET (FÁCIL)
+                    </button>
+                    <p class="text-gray-400 mt-3">✨ No necesitas MetaMask ni crypto | Paga con Email</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Nexum Products Section -->
+        <section id="nexum" class="py-24 px-6">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center mb-16">
+                    <h2 class="text-5xl font-black font-mono neon-text text-[#00FF41] mb-6">PRODUCTOS NEXUM DISPONIBLES</h2>
+                    <p class="text-2xl text-gray-400">Elige tus números de la suerte o cómpralos aleatorios</p>
+                    <p class="text-lg text-[#00FF41] font-bold mt-3">💰 Paga con BNB - Recibe NXL automáticamente</p>
+                </div>
+
+                <div class="nexum-grid">
+
+<!-- CARD 1: FLASH (000-999) -->
+<div class="bg-black/60 backdrop-blur-xl neon-border rounded-xl overflow-hidden card-hover">
+    <div class="bg-gradient-to-r from-[#00FF41]/30 to-[#00FF41]/10 p-4 border-b border-gray-700">
+        <div class="flex items-center justify-between mb-3">
+            <div><div class="text-3xl mb-1">⚡</div><h3 class="text-xl font-black">FLASH</h3></div>
+            <div class="text-right"><div class="text-2xl font-black text-[#00FF41]">$1</div><div class="text-xs text-gray-400">por número</div></div>
+        </div>
+        <div class="text-center mb-3 py-3 bg-black/50 rounded-lg">
+            <p class="text-xs text-gray-400 mb-1">PREMIO</p>
+            <p class="prize-amount prize-flash text-3xl">$500</p>
+        </div>
+        <div class="bg-gray-800/70 rounded-full h-2 mb-2"><div class="bg-[#00FF41] h-2 rounded-full" style="width: 0%" id="progress-0"></div></div>
+        <p class="text-xs text-gray-300"><span id="sold-0">0</span> / 1,000 números</p>
+        <p class="text-xs text-[#00FF41] mt-1">📋 Rango: 000 - 999</p>
+    </div>
+    <div class="p-4">
+        <ul class="space-y-1 mb-4 text-xs">
+            <li class="flex items-center text-gray-200"><span class="text-[#00FF41] mr-2">✓</span>0.1 NXL/número</li>
+        </ul>
+        <div class="mb-3">
+            <p class="text-xs text-gray-400 mb-2 text-center">Compra rápida:</p>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="buyBatch(0, 3)" class="bg-gray-800 border border-[#00FF41]/40 rounded py-2 text-xs font-bold hover:bg-[#00FF41]/20 transition">🎲 3</button>
+                <button onclick="buyBatch(0, 5)" class="bg-gray-800 border border-[#00FF41]/40 rounded py-2 text-xs font-bold hover:bg-[#00FF41]/20 transition">🎲 5</button>
+                <button onclick="buyBatch(0, 10)" class="bg-gray-800 border border-[#00FF41]/40 rounded py-2 text-xs font-bold hover:bg-[#00FF41]/20 transition">🎲 10</button>
+            </div>
+        </div>
+        <button class="w-full bg-gradient-to-r from-[#00FF41] to-[#00cc33] text-black py-2 rounded-lg font-black text-sm hover:scale-105 transition" onclick="openModal(0)">
+            🎯 ELEGIR MIS NÚMEROS
+        </button>
+    </div>
+</div>
+
+<!-- CARD 2: ORIGINAL (0000-9999) - CORREGIDO $1 / $5K -->
+<div class="bg-black/60 backdrop-blur-xl border-2 border-yellow-400 rounded-xl overflow-hidden card-hover relative">
+    <div class="absolute top-3 right-3 bg-yellow-400 text-black px-2 py-1 rounded-full text-xs font-black z-10">POPULAR</div>
+    <div class="bg-gradient-to-r from-yellow-400/30 to-yellow-400/10 p-4 border-b border-gray-700">
+        <div class="flex items-center justify-between mb-3">
+            <div><div class="text-3xl mb-1">🌟</div><h3 class="text-xl font-black">ORIGINAL</h3></div>
+            <div class="text-right"><div class="text-2xl font-black text-yellow-400">$1</div><div class="text-xs text-gray-400">por número</div></div>
+        </div>
+        <div class="text-center mb-3 py-3 bg-black/50 rounded-lg">
+            <p class="text-xs text-gray-400 mb-1">PREMIO</p>
+            <p class="prize-amount prize-original text-3xl">$5,000</p>
+        </div>
+        <div class="bg-gray-800/70 rounded-full h-2 mb-2"><div class="bg-yellow-400 h-2 rounded-full" style="width: 0%" id="progress-1"></div></div>
+        <p class="text-xs text-gray-300"><span id="sold-1">0</span> / 10,000 números</p>
+        <p class="text-xs text-yellow-400 mt-1">📋 Rango: 0000 - 9999</p>
+    </div>
+    <div class="p-4">
+        <ul class="space-y-1 mb-4 text-xs">
+            <li class="flex items-center text-gray-200"><span class="text-yellow-400 mr-2">✓</span>0.25 NXL/número</li>
+        </ul>
+        <div class="mb-3">
+            <p class="text-xs text-gray-400 mb-2 text-center">Compra rápida:</p>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="buyBatch(1, 3)" class="bg-gray-800 border border-yellow-400/40 rounded py-2 text-xs font-bold hover:bg-yellow-400/20 transition">🎲 3</button>
+                <button onclick="buyBatch(1, 5)" class="bg-gray-800 border border-yellow-400/40 rounded py-2 text-xs font-bold hover:bg-yellow-400/20 transition">🎲 5</button>
+                <button onclick="buyBatch(1, 10)" class="bg-gray-800 border border-yellow-400/40 rounded py-2 text-xs font-bold hover:bg-yellow-400/20 transition">🎲 10</button>
+            </div>
+        </div>
+        <button class="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-black py-2 rounded-lg font-black text-sm hover:scale-105 transition" onclick="openModal(1)">
+            🎯 ELEGIR MIS NÚMEROS
+        </button>
+    </div>
+</div>
+
+<!-- CARD 3: PREMIUM (000-999) -->
+<div class="bg-black/60 backdrop-blur-xl neon-border rounded-xl overflow-hidden card-hover">
+    <div class="bg-gradient-to-r from-purple-500/30 to-purple-500/10 p-4 border-b border-gray-700">
+        <div class="flex items-center justify-between mb-3">
+            <div><div class="text-3xl mb-1">💎</div><h3 class="text-xl font-black">PREMIUM</h3></div>
+            <div class="text-right"><div class="text-2xl font-black text-purple-400">$20</div><div class="text-xs text-gray-400">por número</div></div>
+        </div>
+        <div class="text-center mb-3 py-3 bg-black/50 rounded-lg">
+            <p class="text-xs text-gray-400 mb-1">PREMIO</p>
+            <p class="prize-amount prize-premium text-3xl">$10K</p>
+        </div>
+        <div class="bg-gray-800/70 rounded-full h-2 mb-2"><div class="bg-purple-500 h-2 rounded-full" style="width: 0%" id="progress-2"></div></div>
+        <p class="text-xs text-gray-300"><span id="sold-2">0</span> / 1,000 números</p>
+        <p class="text-xs text-purple-400 mt-1">📋 Rango: 000 - 999</p>
+    </div>
+    <div class="p-4">
+        <ul class="space-y-1 mb-4 text-xs">
+            <li class="flex items-center text-gray-200"><span class="text-purple-400 mr-2">✓</span>0.50 NXL/número</li>
+        </ul>
+        <div class="mb-3">
+            <p class="text-xs text-gray-400 mb-2 text-center">Compra rápida:</p>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="buyBatch(2, 3)" class="bg-gray-800 border border-purple-500/40 rounded py-2 text-xs font-bold hover:bg-purple-500/20 transition">🎲 3</button>
+                <button onclick="buyBatch(2, 5)" class="bg-gray-800 border border-purple-500/40 rounded py-2 text-xs font-bold hover:bg-purple-500/20 transition">🎲 5</button>
+                <button onclick="buyBatch(2, 10)" class="bg-gray-800 border border-purple-500/40 rounded py-2 text-xs font-bold hover:bg-purple-500/20 transition">🎲 10</button>
+            </div>
+        </div>
+        <button class="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-2 rounded-lg font-black text-sm hover:scale-105 transition" onclick="openModal(2)">
+            🎯 ELEGIR MIS NÚMEROS
+        </button>
+    </div>
+</div>
+
+<!-- CARD 4: ELITE (0000-9999) -->
+<div class="bg-black/60 backdrop-blur-xl neon-border rounded-xl overflow-hidden card-hover">
+    <div class="bg-gradient-to-r from-blue-500/30 to-blue-500/10 p-4 border-b border-gray-700">
+        <div class="flex items-center justify-between mb-3">
+            <div><div class="text-3xl mb-1">⚔️</div><h3 class="text-xl font-black">ELITE</h3></div>
+            <div class="text-right"><div class="text-2xl font-black text-blue-400">$10</div><div class="text-xs text-gray-400">por número</div></div>
+        </div>
+        <div class="text-center mb-3 py-3 bg-black/50 rounded-lg">
+            <p class="text-xs text-gray-400 mb-1">PREMIO</p>
+            <p class="prize-amount prize-elite text-3xl">$50K</p>
+        </div>
+        <div class="bg-gray-800/70 rounded-full h-2 mb-2"><div class="bg-blue-500 h-2 rounded-full" style="width: 0%" id="progress-3"></div></div>
+        <p class="text-xs text-gray-300"><span id="sold-3">0</span> / 10,000 números</p>
+        <p class="text-xs text-blue-400 mt-1">📋 Rango: 0000 - 9999</p>
+    </div>
+    <div class="p-4">
+        <ul class="space-y-1 mb-4 text-xs">
+            <li class="flex items-center text-gray-200"><span class="text-blue-400 mr-2">✓</span>0.55 NXL/número</li>
+        </ul>
+        <div class="mb-3">
+            <p class="text-xs text-gray-400 mb-2 text-center">Compra rápida:</p>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="buyBatch(3, 3)" class="bg-gray-800 border border-blue-500/40 rounded py-2 text-xs font-bold hover:bg-blue-500/20 transition">🎲 3</button>
+                <button onclick="buyBatch(3, 5)" class="bg-gray-800 border border-blue-500/40 rounded py-2 text-xs font-bold hover:bg-blue-500/20 transition">🎲 5</button>
+                <button onclick="buyBatch(3, 10)" class="bg-gray-800 border border-blue-500/40 rounded py-2 text-xs font-bold hover:bg-blue-500/20 transition">🎲 10</button>
+            </div>
+        </div>
+        <button class="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-2 rounded-lg font-black text-sm hover:scale-105 transition" onclick="openModal(3)">
+            🎯 ELEGIR MIS NÚMEROS
+        </button>
+    </div>
+</div>
+
+<!-- CARD 5: VIP (000-999) -->
+<div class="bg-black/60 backdrop-blur-xl neon-border rounded-xl overflow-hidden card-hover">
+    <div class="bg-gradient-to-r from-pink-500/30 to-pink-500/10 p-4 border-b border-gray-700">
+        <div class="flex items-center justify-between mb-3">
+            <div><div class="text-3xl mb-1">💎</div><h3 class="text-xl font-black">VIP</h3></div>
+            <div class="text-right"><div class="text-2xl font-black text-pink-400">$200</div><div class="text-xs text-gray-400">por número</div></div>
+        </div>
+        <div class="text-center mb-3 py-3 bg-black/50 rounded-lg">
+            <p class="text-xs text-gray-400 mb-1">PREMIO</p>
+            <p class="prize-amount prize-vip text-3xl">$100K</p>
+        </div>
+        <div class="bg-gray-800/70 rounded-full h-2 mb-2"><div class="bg-pink-500 h-2 rounded-full" style="width: 0%" id="progress-4"></div></div>
+        <p class="text-xs text-gray-300"><span id="sold-4">0</span> / 1,000 números</p>
+        <p class="text-xs text-pink-400 mt-1">📋 Rango: 000 - 999</p>
+    </div>
+    <div class="p-4">
+        <ul class="space-y-1 mb-4 text-xs">
+            <li class="flex items-center text-gray-200"><span class="text-pink-400 mr-2">✓</span>0.85 NXL/número</li>
+        </ul>
+        <div class="mb-3">
+            <p class="text-xs text-gray-400 mb-2 text-center">Compra rápida:</p>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="buyBatch(4, 3)" class="bg-gray-800 border border-pink-500/40 rounded py-2 text-xs font-bold hover:bg-pink-500/20 transition">🎲 3</button>
+                <button onclick="buyBatch(4, 5)" class="bg-gray-800 border border-pink-500/40 rounded py-2 text-xs font-bold hover:bg-pink-500/20 transition">🎲 5</button>
+                <button onclick="buyBatch(4, 10)" class="bg-gray-800 border border-pink-500/40 rounded py-2 text-xs font-bold hover:bg-pink-500/20 transition">🎲 10</button>
+            </div>
+        </div>
+        <button class="w-full bg-gradient-to-r from-pink-500 to-pink-600 text-white py-2 rounded-lg font-black text-sm hover:scale-105 transition" onclick="openModal(4)">
+            🎯 ELEGIR MIS NÚMEROS
+        </button>
+    </div>
+</div>
+
+<!-- CARD 6: BLACKBLOK (0000-9999) -->
+<div class="bg-black/60 backdrop-blur-xl border-2 border-orange-500 rounded-xl overflow-hidden card-hover relative">
+    <div class="absolute top-3 right-3 bg-orange-500 text-black px-2 py-1 rounded-full text-xs font-black z-10">MEGA</div>
+    <div class="bg-gradient-to-r from-orange-500/30 to-orange-500/10 p-4 border-b border-gray-700">
+        <div class="flex items-center justify-between mb-3">
+            <div><div class="text-3xl mb-1">👑</div><h3 class="text-xl font-black">BLACKBLOK</h3></div>
+            <div class="text-right"><div class="text-2xl font-black text-orange-400">$200</div><div class="text-xs text-gray-400">por número</div></div>
+        </div>
+        <div class="text-center mb-3 py-3 bg-black/50 rounded-lg">
+            <p class="text-xs text-gray-400 mb-1">PREMIO</p>
+            <p class="prize-amount prize-blackblok text-3xl">$1M</p>
+        </div>
+        <div class="bg-gray-800/70 rounded-full h-2 mb-2"><div class="bg-orange-500 h-2 rounded-full" style="width: 0%" id="progress-5"></div></div>
+        <p class="text-xs text-gray-300"><span id="sold-5">0</span> / 10,000 números</p>
+        <p class="text-xs text-orange-400 mt-1">📋 Rango: 0000 - 9999</p>
+    </div>
+    <div class="p-4">
+        <ul class="space-y-1 mb-4 text-xs">
+            <li class="flex items-center text-gray-200"><span class="text-orange-400 mr-2">✓</span>1.0 NXL/número</li>
+        </ul>
+        <div class="mb-3">
+            <p class="text-xs text-gray-400 mb-2 text-center">Compra rápida:</p>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="buyBatch(5, 3)" class="bg-gray-800 border border-orange-500/40 rounded py-2 text-xs font-bold hover:bg-orange-500/20 transition">🎲 3</button>
+                <button onclick="buyBatch(5, 5)" class="bg-gray-800 border border-orange-500/40 rounded py-2 text-xs font-bold hover:bg-orange-500/20 transition">🎲 5</button>
+                <button onclick="buyBatch(5, 10)" class="bg-gray-800 border border-orange-500/40 rounded py-2 text-xs font-bold hover:bg-orange-500/20 transition">🎲 10</button>
+            </div>
+        </div>
+        <button class="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-2 rounded-lg font-black text-sm hover:scale-105 transition" onclick="openModal(5)">
+            🎯 ELEGIR MIS NÚMEROS
+        </button>
+    </div>
+</div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Distribución de Fondos -->
+        <section class="py-16 px-6 bg-gradient-to-b from-black/40 to-black/60">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-4xl font-black font-mono text-center neon-text text-[#00FF41] mb-6">DISTRIBUCIÓN TRANSPARENTE DE FONDOS</h2>
+                <p class="text-xl text-gray-300 text-center mb-12">Cada compra se distribuye automáticamente en blockchain</p>
+                
+                <div class="grid md:grid-cols-3 gap-8 mb-8">
+                    <div class="bg-black/60 backdrop-blur-xl neon-border p-6 rounded-2xl text-center hover:scale-105 transition">
+                        <div class="text-5xl mb-3">🏆</div>
+                        <h3 class="text-2xl font-black text-[#00FF41] mb-2">50%</h3>
+                        <p class="text-lg font-bold text-white mb-2">Premio Principal</p>
+                        <p class="text-sm text-gray-400">Pool acumulado para el ganador</p>
+                    </div>
+
+                    <div class="bg-black/60 backdrop-blur-xl neon-border p-6 rounded-2xl text-center hover:scale-105 transition">
+                        <div class="text-5xl mb-3">🎁</div>
+                        <h3 class="text-2xl font-black text-purple-400 mb-2">10%</h3>
+                        <p class="text-lg font-bold text-white mb-2">Recompensas Instantáneas</p>
+                        <p class="text-sm text-gray-400">Airdrops y bonos para holders</p>
+                    </div>
+
+                    <div class="bg-black/60 backdrop-blur-xl neon-border p-6 rounded-2xl text-center hover:scale-105 transition">
+                        <div class="text-5xl mb-3">🌐</div>
+                        <h3 class="text-2xl font-black text-blue-400 mb-2">10%</h3>
+                        <p class="text-lg font-bold text-white mb-2">Red Multinivel</p>
+                        <p class="text-sm text-gray-400">Sistema de 3 niveles (5% + 3% + 2%)</p>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="bg-black/60 backdrop-blur-xl neon-border p-6 rounded-2xl text-center hover:scale-105 transition">
+                        <div class="text-5xl mb-3">₿</div>
+                        <h3 class="text-2xl font-black text-orange-400 mb-2">10%</h3>
+                        <p class="text-lg font-bold text-white mb-2">Treasury DAO (BTC)</p>
+                        <p class="text-sm text-gray-400">Reserva en Bitcoin para la comunidad</p>
+                    </div>
+
+                    <div class="bg-black/60 backdrop-blur-xl neon-border p-6 rounded-2xl text-center hover:scale-105 transition">
+                        <div class="text-5xl mb-3">🤝</div>
+                        <h3 class="text-2xl font-black text-pink-400 mb-2">5%</h3>
+                        <p class="text-lg font-bold text-white mb-2">Comisión Embajadores</p>
+                        <p class="text-sm text-gray-400">Para quienes refieren usuarios</p>
+                    </div>
+
+                    <div class="bg-black/60 backdrop-blur-xl neon-border p-6 rounded-2xl text-center hover:scale-105 transition">
+                        <div class="text-5xl mb-3">⚙️</div>
+                        <h3 class="text-2xl font-black text-yellow-400 mb-2">15%</h3>
+                        <p class="text-lg font-bold text-white mb-2">Operaciones</p>
+                        <p class="text-sm text-gray-400">Fundador, liquidez, gastos operativos y partners</p>
+                    </div>
+                </div>
+
+                <div class="mt-12 text-center">
+                    <div class="inline-block bg-black/60 backdrop-blur-xl neon-border p-6 rounded-2xl">
+                        <p class="text-gray-400 mb-2">Distribución Total Verificada</p>
+                        <p class="text-5xl font-black text-[#00FF41] neon-text">100%</p>
+                        <p class="text-sm text-gray-400 mt-2">✅ Auditable en blockchain</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- MI CUENTA SECTION -->
+    <div id="account-section" class="section">
+        <section class="py-24 px-6">
+            <div class="max-w-5xl mx-auto">
+                <h2 class="text-5xl font-black font-mono text-center neon-text text-[#00FF41] mb-12">MI CUENTA</h2>
+                
+                <div class="bg-black/60 backdrop-blur-xl neon-border p-8 rounded-2xl mb-8 text-center">
+                    <h3 class="text-gray-400 font-mono text-sm mb-3 tracking-widest">BALANCE NXL</h3>
+                    <p class="text-6xl font-black text-[#00FF41] neon-text mb-3" id="nxl-balance">0.00</p>
+                    <p class="text-gray-400">≈ $<span id="nxl-usd">0.00</span> USD</p>
+                </div>
+
+                <div class="bg-black/60 backdrop-blur-xl neon-border p-8 rounded-2xl">
+                    <h3 class="text-2xl font-black text-[#00FF41] mb-6">MIS NÚMEROS</h3>
+                    <div id="my-tickets" class="space-y-4">
+                        <p class="text-gray-400 text-center py-8">Conecta tu wallet para ver tus números</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- EMBAJADORES SECTION - CORREGIDO A 3 NIVELES (5% + 3% + 2%) -->
+    <div id="ambassadors-section" class="section">
+        <section class="py-24 px-6">
+            <div class="max-w-6xl mx-auto">
+                <h2 class="text-5xl font-black font-mono text-center neon-text text-[#00FF41] mb-6">PROGRAMA DE EMBAJADORES</h2>
+                <p class="text-2xl text-gray-300 text-center mb-12">Gana comisiones en USD/BNB por cada persona que refieras</p>
+                
+                <!-- ¿CÓMO FUNCIONA EL 5%? -->
+                <div class="bg-gradient-to-br from-[#00FF41]/10 to-purple-500/10 border-2 border-[#00FF41] p-8 rounded-2xl mb-12">
+                    <h3 class="text-3xl font-black text-[#00FF41] mb-6 text-center">💰 ¿CÓMO ME LLEVO EL 5%?</h3>
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="bg-black/60 p-6 rounded-xl">
+                            <h4 class="text-xl font-black text-white mb-4">🎯 PASO A PASO</h4>
+                            <ol class="space-y-3 text-gray-300">
+                                <li class="flex items-start">
+                                    <span class="text-[#00FF41] font-black mr-3 text-xl">1.</span>
+                                    <span><strong>Conecta tu wallet</strong> en NEXALO</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-[#00FF41] font-black mr-3 text-xl">2.</span>
+                                    <span><strong>Copia tu link único</strong> de referido</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-[#00FF41] font-black mr-3 text-xl">3.</span>
+                                    <span><strong>Comparte</strong> en redes sociales, amigos, familia</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-[#00FF41] font-black mr-3 text-xl">4.</span>
+                                    <span><strong>Cuando compren números</strong> → Recibes 5% en USD/BNB automáticamente</span>
+                                </li>
+                            </ol>
+                        </div>
+
+                        <div class="bg-black/60 p-6 rounded-xl">
+                            <h4 class="text-xl font-black text-yellow-400 mb-4">💵 EJEMPLO REAL</h4>
+                            <div class="space-y-4 text-gray-300">
+                                <div class="bg-green-900/20 border border-green-500 p-4 rounded-lg">
+                                    <p class="text-sm text-gray-400 mb-2">Tu referido compra 10 números ORIGINAL ($1 cada uno)</p>
+                                    <p class="text-2xl font-black text-white">Total: $10</p>
+                                    <p class="text-3xl font-black text-[#00FF41] mt-2">Tú recibes: $0.50 💰</p>
+                                </div>
+                                <div class="bg-green-900/20 border border-green-500 p-4 rounded-lg">
+                                    <p class="text-sm text-gray-400 mb-2">Tu referido compra 5 números VIP ($200 cada uno)</p>
+                                    <p class="text-2xl font-black text-white">Total: $1,000</p>
+                                    <p class="text-3xl font-black text-[#00FF41] mt-2">Tú recibes: $50 💰</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SISTEMA MULTINIVEL 3 NIVELES (5% + 3% + 2%) -->
+                <div class="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-2 border-blue-400 p-8 rounded-2xl mb-12">
+                    <h3 class="text-3xl font-black text-blue-400 mb-6 text-center">🌐 SISTEMA MULTINIVEL DE 3 NIVELES</h3>
+                    <p class="text-xl text-gray-300 text-center mb-8">Gana también de las personas que tus referidos traigan (Red del 10%)</p>
+                    
+                    <div class="max-w-4xl mx-auto">
+                        <!-- Diagrama Visual de 3 Niveles -->
+                        <div class="bg-black/60 p-8 rounded-xl mb-8">
+                            <div class="flex flex-col items-center space-y-6">
+                                <!-- TÚ --  >
+                                <div class="bg-gradient-to-r from-[#00FF41] to-[#00cc33] p-6 rounded-xl text-center">
+                                    <p class="text-black font-black text-2xl">TÚ (EMBAJADOR)</p>
+                                    <p class="text-black text-sm">Tu wallet conectada</p>
+                                </div>
+                                
+                                <div class="text-4xl">👇</div>
+                                
+                                <!-- NIVEL 1: 5% -->
+                                <div class="grid grid-cols-3 gap-4 w-full">
+                                    <div class="bg-yellow-500/30 border-2 border-yellow-400 p-4 rounded-xl text-center">
+                                        <p class="text-yellow-400 font-black text-xl">REFERIDO 1</p>
+                                        <p class="text-xs text-gray-400 mt-2">Compra: $100</p>
+                                        <p class="text-[#00FF41] font-black text-lg mt-1">Tú ganas: $5 (5%)</p>
+                                    </div>
+                                    <div class="bg-yellow-500/30 border-2 border-yellow-400 p-4 rounded-xl text-center">
+                                        <p class="text-yellow-400 font-black text-xl">REFERIDO 2</p>
+                                        <p class="text-xs text-gray-400 mt-2">Compra: $200</p>
+                                        <p class="text-[#00FF41] font-black text-lg mt-1">Tú ganas: $10 (5%)</p>
+                                    </div>
+                                    <div class="bg-yellow-500/30 border-2 border-yellow-400 p-4 rounded-xl text-center">
+                                        <p class="text-yellow-400 font-black text-xl">REFERIDO 3</p>
+                                        <p class="text-xs text-gray-400 mt-2">Compra: $50</p>
+                                        <p class="text-[#00FF41] font-black text-lg mt-1">Tú ganas: $2.5 (5%)</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-4xl">👇</div>
+                                
+                                <!-- NIVEL 2: 3% -->
+                                <div class="grid grid-cols-2 gap-4 w-full max-w-md">
+                                    <div class="bg-orange-500/30 border-2 border-orange-400 p-4 rounded-xl text-center">
+                                        <p class="text-orange-400 font-black">NIVEL 2-A</p>
+                                        <p class="text-xs text-gray-400 mt-2">Traído por Referido 1</p>
+                                        <p class="text-xs text-gray-400">Compra: $100</p>
+                                        <p class="text-[#00FF41] font-black text-lg mt-1">Tú ganas: $3 (3%)</p>
+                                    </div>
+                                    <div class="bg-orange-500/30 border-2 border-orange-400 p-4 rounded-xl text-center">
+                                        <p class="text-orange-400 font-black">NIVEL 2-B</p>
+                                        <p class="text-xs text-gray-400 mt-2">Traído por Referido 2</p>
+                                        <p class="text-xs text-gray-400">Compra: $200</p>
+                                        <p class="text-[#00FF41] font-black text-lg mt-1">Tú ganas: $6 (3%)</p>
+                                    </div>
+                                </div>
+
+                                <div class="text-4xl">👇</div>
+                                
+                                <!-- NIVEL 3: 2% -->
+                                <div class="grid grid-cols-2 gap-4 w-full max-w-sm">
+                                    <div class="bg-purple-500/30 border-2 border-purple-400 p-4 rounded-xl text-center">
+                                        <p class="text-purple-400 font-black">NIVEL 3-A</p>
+                                        <p class="text-xs text-gray-400 mt-2">Traído por Nivel 2-A</p>
+                                        <p class="text-xs text-gray-400">Compra: $100</p>
+                                        <p class="text-[#00FF41] font-black text-lg mt-1">Tú ganas: $2 (2%)</p>
+                                    </div>
+                                    <div class="bg-purple-500/30 border-2 border-purple-400 p-4 rounded-xl text-center">
+                                        <p class="text-purple-400 font-black">NIVEL 3-B</p>
+                                        <p class="text-xs text-gray-400 mt-2">Traído por Nivel 2-B</p>
+                                        <p class="text-xs text-gray-400">Compra: $100</p>
+                                        <p class="text-[#00FF41] font-black text-lg mt-1">Tú ganas: $2 (2%)</p>
+                                    </div>
+                                </div>
+
+                                <!-- TOTAL -->
+                                <div class="bg-[#00FF41]/20 border-2 border-[#00FF41] p-6 rounded-xl text-center w-full mt-6">
+                                    <p class="text-gray-400 mb-2">TOTAL DE COMISIONES EN ESTE EJEMPLO:</p>
+                                    <p class="text-5xl font-black text-[#00FF41]">$30.5</p>
+                                    <p class="text-sm text-gray-400 mt-2">($17.5 nivel 1 + $9 nivel 2 + $4 nivel 3)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Explicación Detallada de 3 Niveles -->
+                        <div class="grid md:grid-cols-3 gap-6">
+                            <div class="bg-black/60 p-6 rounded-xl">
+                                <h4 class="text-xl font-black text-yellow-400 mb-4">📊 NIVEL 1 - 5%</h4>
+                                <ul class="space-y-3 text-gray-300">
+                                    <li class="flex items-start">
+                                        <span class="text-yellow-400 mr-2">✓</span>
+                                        <span>Personas que <strong>TÚ</strong> refieres directamente</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="text-yellow-400 mr-2">✓</span>
+                                        <span>Ganas <strong>5% en USD/BNB</strong> de cada compra</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="text-yellow-400 mr-2">✓</span>
+                                        <span>Pago <strong>automático e instantáneo</strong></span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div class="bg-black/60 p-6 rounded-xl">
+                                <h4 class="text-xl font-black text-orange-400 mb-4">🌟 NIVEL 2 - 3%</h4>
+                                <ul class="space-y-3 text-gray-300">
+                                    <li class="flex items-start">
+                                        <span class="text-orange-400 mr-2">✓</span>
+                                        <span>Personas que <strong>tus referidos</strong> traigan</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="text-orange-400 mr-2">✓</span>
+                                        <span>Ganas <strong>3% en USD/BNB</strong> adicional</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="text-orange-400 mr-2">✓</span>
+                                        <span><strong>Ingresos pasivos</strong> por tu red</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div class="bg-black/60 p-6 rounded-xl">
+                                <h4 class="text-xl font-black text-purple-400 mb-4">🚀 NIVEL 3 - 2%</h4>
+                                <ul class="space-y-3 text-gray-300">
+                                    <li class="flex items-start">
+                                        <span class="text-purple-400 mr-2">✓</span>
+                                        <span>Personas que <strong>nivel 2</strong> traiga</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="text-purple-400 mr-2">✓</span>
+                                        <span>Ganas <strong>2% en USD/BNB</strong> más</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="text-purple-400 mr-2">✓</span>
+                                        <span>Crece <strong>exponencialmente</strong></span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IMPORTANTE: NXL vs COMISIONES -->
+                <div class="bg-red-900/30 border-2 border-red-500 p-6 rounded-2xl mb-12">
+                    <h3 class="text-xl font-black text-red-400 mb-3 flex items-center gap-2">
+                        <span>⚠️</span>
+                        <span>IMPORTANTE: DIFERENCIA ENTRE NXL Y COMISIONES</span>
+                    </h3>
+                    <div class="grid md:grid-cols-2 gap-6 text-gray-300">
+                        <div class="bg-black/40 p-4 rounded-xl">
+                            <h4 class="text-lg font-black text-[#00FF41] mb-3">🎁 TOKENS NXL</h4>
+                            <ul class="space-y-2 text-sm">
+                                <li class="flex items-start">
+                                    <span class="text-[#00FF41] mr-2">✓</span>
+                                    <span>Se obtienen <strong>SOLO comprando números</strong> de Nexum</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-[#00FF41] mr-2">✓</span>
+                                    <span>Cantidad según el Nexum (0.1 a 1.0 NXL por número)</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-[#00FF41] mr-2">✓</span>
+                                    <span><strong>NO</strong> se dan NXL por referir personas</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-black/40 p-4 rounded-xl">
+                            <h4 class="text-lg font-black text-yellow-400 mb-3">💰 COMISIONES EMBAJADOR</h4>
+                            <ul class="space-y-2 text-sm">
+                                <li class="flex items-start">
+                                    <span class="text-yellow-400 mr-2">✓</span>
+                                    <span>Se pagan en <strong>USD/BNB</strong> (no en NXL)</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-yellow-400 mr-2">✓</span>
+                                    <span>5% nivel 1 + 3% nivel 2 + 2% nivel 3 de las compras</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-yellow-400 mr-2">✓</span>
+                                    <span>Pago <strong>automático</strong> al referir</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FORMULARIO REGISTRO EMBAJADOR -->
+                <div class="bg-black/60 backdrop-blur-xl neon-border p-8 rounded-2xl">
+                    <h3 class="text-2xl font-black text-[#00FF41] mb-6 text-center">📝 OBTÉN TU LINK DE EMBAJADOR</h3>
+                    <div class="max-w-2xl mx-auto">
+                        <div class="mb-6">
+                            <label class="block text-gray-400 mb-2 font-bold">Tu Wallet Address:</label>
+                            <input type="text" id="ref-wallet" class="w-full bg-black/50 border-2 border-[#00FF41] text-[#00FF41] font-mono px-4 py-3 rounded-lg" placeholder="Conecta tu wallet primero" readonly>
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="block text-gray-400 mb-2 font-bold">Tu Link Único de Referido:</label>
+                            <div class="flex gap-3">
+                                <input type="text" id="referral-link" class="flex-1 bg-black/50 border-2 border-[#00FF41] text-[#00FF41] font-mono px-4 py-3 rounded-lg text-sm" value="Conecta tu wallet para obtener tu link" readonly>
+                                <button onclick="copyReferralLink()" class="bg-gradient-to-r from-[#00FF41] to-[#00cc33] text-black px-6 py-3 rounded-lg font-black hover:scale-105 transition">
+                                    📋 COPIAR
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-yellow-900/20 border border-yellow-500 p-4 rounded-lg">
+                            <p class="text-yellow-400 font-bold mb-2">✨ ¿Cómo usar tu link?</p>
+                            <ul class="text-gray-300 text-sm space-y-1">
+                                <li>• Comparte en Twitter, Telegram, Discord, Instagram</li>
+                                <li>• Envía por WhatsApp, email a amigos y familia</li>
+                                <li>• Publica en tu blog o canal de YouTube</li>
+                                <li>• Cada compra = Comisión automática en tu wallet</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- STAKING SECTION -->
+    <div id="staking-section" class="section">
+        <section class="py-24 px-6">
+            <div class="max-w-5xl mx-auto">
+                <h2 class="text-5xl font-black font-mono text-center neon-text text-[#00FF41] mb-12">STAKING NXL</h2>
+                <div class="bg-black/60 backdrop-blur-xl neon-border p-12 rounded-2xl text-center">
+                    <div class="text-8xl mb-6">🚧</div>
+                    <h3 class="text-3xl font-black text-yellow-400 mb-4">PRÓXIMAMENTE</h3>
+                    <p class="text-xl text-gray-300 mb-8">El sistema de staking estará disponible pronto. Podrás hacer stake de tus NXL y ganar recompensas pasivas.</p>
+                    <div class="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto text-left">
+                        <ul class="space-y-3 text-lg text-gray-300">
+                            <li class="flex items-center"><span class="text-[#00FF41] mr-3">✓</span>APY hasta 120% anual</li>
+                            <li class="flex items-center"><span class="text-[#00FF41] mr-3">✓</span>Sin lockup - retira cuando quieras</li>
+                        </ul>
+                        <ul class="space-y-3 text-lg text-gray-300">
+                            <li class="flex items-center"><span class="text-[#00FF41] mr-3">✓</span>Recompensas en NXL + USDT</li>
+                            <li class="flex items-center"><span class="text-[#00FF41] mr-3">✓</span>Boost para holders VIP</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- VIDEOS SECTION -->
+    <div id="videos-section" class="section">
+        <section class="py-24 px-6">
+            <div class="max-w-6xl mx-auto">
+                <h2 class="text-5xl font-black font-mono text-center neon-text text-[#00FF41] mb-12">VIDEOS EDUCATIVOS</h2>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="bg-black/60 backdrop-blur-xl neon-border rounded-2xl overflow-hidden card-hover">
+                        <div class="video-container">
+                            <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-xl font-black text-[#00FF41] mb-2">¿Qué es NEXALO?</h3>
+                            <p class="text-gray-400">Introducción completa al ecosistema</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-black/60 backdrop-blur-xl neon-border rounded-2xl overflow-hidden card-hover">
+                        <div class="video-container">
+                            <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-xl font-black text-yellow-400 mb-2">Tutorial: Comprar Números</h3>
+                            <p class="text-gray-400">Guía paso a paso</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-black/60 backdrop-blur-xl neon-border rounded-2xl overflow-hidden card-hover">
+                        <div class="video-container">
+                            <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-xl font-black text-purple-400 mb-2">Sistema de Embajadores</h3>
+                            <p class="text-gray-400">Cómo ganar comisiones</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-black/60 backdrop-blur-xl neon-border rounded-2xl overflow-hidden card-hover">
+                        <div class="video-container">
+                            <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-xl font-black text-blue-400 mb-2">Configurar MetaMask</h3>
+                            <p class="text-gray-400">Conéctate a BSC Testnet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- TOKENOMICS SECTION -->
+    <div id="tokenomics-section" class="section">
+        <section class="py-24 px-6">
+            <div class="max-w-6xl mx-auto">
+                <h2 class="text-5xl font-black font-mono text-center neon-text text-[#00FF41] mb-12">TOKENOMICS NXL</h2>
+                
+                <div class="grid md:grid-cols-2 gap-8 mb-12">
+                    <div class="bg-black/60 backdrop-blur-xl neon-border p-8 rounded-2xl">
+                        <h3 class="text-2xl font-black text-[#00FF41] mb-6">DISTRIBUCIÓN</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between mb-2"><span class="text-gray-300">Preventa</span><span class="text-[#00FF41] font-bold">40%</span></div>
+                                <div class="bg-gray-800 rounded-full h-3"><div class="bg-[#00FF41] h-3 rounded-full" style="width: 40%"></div></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2"><span class="text-gray-300">Liquidez</span><span class="text-yellow-400 font-bold">25%</span></div>
+                                <div class="bg-gray-800 rounded-full h-3"><div class="bg-yellow-400 h-3 rounded-full" style="width: 25%"></div></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2"><span class="text-gray-300">Recompensas</span><span class="text-purple-400 font-bold">20%</span></div>
+                                <div class="bg-gray-800 rounded-full h-3"><div class="bg-purple-400 h-3 rounded-full" style="width: 20%"></div></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2"><span class="text-gray-300">Equipo</span><span class="text-blue-400 font-bold">10%</span></div>
+                                <div class="bg-gray-800 rounded-full h-3"><div class="bg-blue-400 h-3 rounded-full" style="width: 10%"></div></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2"><span class="text-gray-300">Marketing</span><span class="text-pink-400 font-bold">5%</span></div>
+                                <div class="bg-gray-800 rounded-full h-3"><div class="bg-pink-400 h-3 rounded-full" style="width: 5%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-black/60 backdrop-blur-xl neon-border p-8 rounded-2xl">
+                        <h3 class="text-2xl font-black text-[#00FF41] mb-6">DETALLES DEL TOKEN</h3>
+                        <div class="space-y-4 text-gray-300">
+                            <div class="flex justify-between border-b border-gray-700 pb-2">
+                                <span>Supply Total:</span>
+                                <span class="text-[#00FF41] font-bold">1,000,000,000 NXL</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-700 pb-2">
+                                <span>Blockchain:</span>
+                                <span class="text-[#00FF41] font-bold">BNB Chain (BSC)</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-700 pb-2">
+                                <span>Tipo:</span>
+                                <span class="text-[#00FF41] font-bold">BEP-20</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-700 pb-2">
+                                <span>Decimales:</span>
+                                <span class="text-[#00FF41] font-bold">18</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-700 pb-2">
+                                <span>Tax Compra/Venta:</span>
+                                <span class="text-[#00FF41] font-bold">0% / 0%</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-700 pb-2">
+                                <span>Contrato:</span>
+                                <span class="text-[#00FF41] font-bold text-xs">0xd914...9138</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-black/60 backdrop-blur-xl neon-border p-8 rounded-2xl">
+                    <h3 class="text-2xl font-black text-[#00FF41] mb-6 text-center">UTILIDAD DEL TOKEN NXL</h3>
+                    <div class="grid md:grid-cols-3 gap-6 text-center">
+                        <div>
+                            <div class="text-5xl mb-3">🎫</div>
+                            <h4 class="text-xl font-bold text-[#00FF41] mb-2">Recompensas por Compra</h4>
+                            <p class="text-gray-400">Recibe NXL automáticamente con cada número comprado</p>
+                        </div>
+                        <div>
+                            <div class="text-5xl mb-3">💰</div>
+                            <h4 class="text-xl font-bold text-yellow-400 mb-2">Staking Rewards</h4>
+                            <p class="text-gray-400">Haz stake y gana recompensas pasivas (próximamente)</p>
+                        </div>
+                        <div>
+                            <div class="text-5xl mb-3">🏆</div>
+                            <h4 class="text-xl font-bold text-purple-400 mb-2">Bonus Holders</h4>
+                            <p class="text-gray-400">Holders reciben bonus adicionales en premios</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="py-12 px-6 bg-black border-t border-gray-800 text-center">
+        <p class="text-gray-500 font-mono">© 2025 NEXALO - Powered by BSC Testnet</p>
+        <p class="text-gray-600 font-mono text-sm mt-2">⚠️ Actualmente en BSC Testnet - Usa tBNB del faucet</p>
+    </footer>
+
+    <script>
+        const NXL_ADDRESS = "0xd9145CCE52D386f254917e481eB44e9943F39138";
+        
+        let provider, signer, account;
+        let userTickets = {};
+        let userNXL = 0;
+        let currentNexumId = 0;
+        let selectedNumbers = [];
+        let soldNumbers = {0: [], 1: [], 2: [], 3: [], 4: [], 5: []};
+        
+        const nexumData = [
+            { name: 'FLASH', total: 1000, price: 1, nxl: 0.1, digits: 3 },
+            { name: 'ORIGINAL', total: 10000, price: 1, nxl: 0.25, digits: 4 }, // CORREGIDO
+            { name: 'PREMIUM', total: 1000, price: 20, nxl: 0.50, digits: 3 },
+            { name: 'ELITE', total: 10000, price: 10, nxl: 0.55, digits: 4 },
+            { name: 'VIP', total: 1000, price: 200, nxl: 0.85, digits: 3 },
+            { name: 'BLACKBLOK', total: 10000, price: 200, nxl: 1.0, digits: 4 }
+        ];
+
+        function showSection(sectionName) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionName + '-section').classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        // FUNCIÓN PARA USUARIOS NO-CRYPTO
+        function showNoCryptoGuide() {
+            alert('🚀 COMPRA SIN WALLET - PRÓXIMAMENTE\n\n' +
+                  '✅ Ingresa con tu email\n' +
+                  '✅ Paga con tarjeta/PayPal\n' +
+                  '✅ Nosotros creamos tu wallet\n' +
+                  '✅ Recibes tus NXL automáticamente\n\n' +
+                  '💡 Mientras tanto, conecta MetaMask o usa:\n' +
+                  'https://metamask.io');
+        }
+
+        function openModal(nexumId) {
+            if (!account) {
+                if (confirm('⚠️ Necesitas una wallet para comprar\n\n¿Quieres ver cómo comprar sin wallet (fácil)?')) {
+                    showNoCryptoGuide();
+                }
+                return;
+            }
+            currentNexumId = nexumId;
+            selectedNumbers = [];
+            const nexum = nexumData[nexumId];
+            document.getElementById('modal-title').textContent = `SELECCIONA - ${nexum.name}`;
+            document.getElementById('number-input').placeholder = nexum.digits === 3 ? '000' : '0000';
+            document.getElementById('number-input').maxLength = nexum.digits;
+            document.getElementById('number-format').textContent = `Formato: ${'0'.repeat(nexum.digits)} a ${'9'.repeat(nexum.digits)}`;
+            document.getElementById('number-input').value = '';
+            updateSelectedNumbersDisplay();
+            document.getElementById('number-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('number-modal').classList.remove('active');
+        }
+
+        function addNumber() {
+            const input = document.getElementById('number-input');
+            const nexum = nexumData[currentNexumId];
+            let number = input.value.trim();
+            
+            if (number.length !== nexum.digits) {
+                alert(`❌ Debe tener ${nexum.digits} dígitos`);
+                return;
+            }
+            
+            number = number.padStart(nexum.digits, '0');
+            
+            if (soldNumbers[currentNexumId].includes(number)) {
+                alert(`❌ ${number} ya está vendido`);
+                return;
+            }
+            if (selectedNumbers.includes(number)) {
+                alert(`⚠️ Ya seleccionaste ${number}`);
+                return;
+            }
+            
+            selectedNumbers.push(number);
+            input.value = '';
+            updateSelectedNumbersDisplay();
+        }
+
+        function removeNumber(number) {
+            selectedNumbers = selectedNumbers.filter(n => n !== number);
+            updateSelectedNumbersDisplay();
+        }
+
+        function updateSelectedNumbersDisplay() {
+            const container = document.getElementById('selected-numbers-container');
+            document.getElementById('selected-count').textContent = selectedNumbers.length;
+            
+            if (selectedNumbers.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center w-full">Ningún número seleccionado</p>';
+                return;
+            }
+            
+            container.innerHTML = selectedNumbers.map(num => `
+                <div class="selected-number">
+                    <span>${num}</span>
+                    <button onclick="removeNumber('${num}')">×</button>
+                </div>
+            `).join('');
+        }
+
+        async function buyBatch(nexumId, quantity) {
+            if (!account) {
+                if (confirm('⚠️ Necesitas una wallet\n\n¿Ver cómo comprar sin wallet?')) {
+                    showNoCryptoGuide();
+                }
+                return;
+            }
+            
+            const nexum = nexumData[nexumId];
+            const availableNumbers = [];
+            
+            for (let i = 0; i < nexum.total; i++) {
+                const number = i.toString().padStart(nexum.digits, '0');
+                if (!soldNumbers[nexumId].includes(number)) {
+                    availableNumbers.push(number);
+                }
+            }
+            
+            if (availableNumbers.length < quantity) {
+                alert(`⚠️ Solo quedan ${availableNumbers.length} números`);
+                return;
+            }
+            
+            const randomNumbers = [];
+            for (let i = 0; i < quantity; i++) {
+                const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+                randomNumbers.push(availableNumbers[randomIndex]);
+                availableNumbers.splice(randomIndex, 1);
+            }
+            
+            const total = nexum.price * quantity;
+            const nxlAmount = nexum.nxl * quantity;
+            
+            if (confirm(`🎲 ${nexum.name}\n\n📋 ${randomNumbers.join(', ')}\n💵 $${total}\n🎁 ${nxlAmount} NXL\n\n¿Confirmar?`)) {
+                alert('⏳ Procesando...');
+                
+                setTimeout(async () => {
+                    if (!userTickets[nexumId]) userTickets[nexumId] = [];
+                    userTickets[nexumId].push(...randomNumbers);
+                    soldNumbers[nexumId].push(...randomNumbers);
+                    userNXL += nxlAmount;
+                    
+                    const sold = soldNumbers[nexumId].length;
+                    document.getElementById(`sold-${nexumId}`).textContent = sold;
+                    document.getElementById(`progress-${nexumId}`).style.width = `${(sold/nexum.total)*100}%`;
+                    
+                    await updateMyAccount();
+                    alert(`✅ ¡Compra confirmada!\n\n${quantity} números\n+${nxlAmount} NXL`);
+                }, 2000);
+            }
+        }
+
+        async function confirmPurchase() {
+            if (selectedNumbers.length === 0) {
+                alert('⚠️ Selecciona al menos un número');
+                return;
+            }
+            
+            const nexum = nexumData[currentNexumId];
+            const quantity = selectedNumbers.length;
+            const total = nexum.price * quantity;
+            const nxlAmount = nexum.nxl * quantity;
+            
+            if (confirm(`🎫 ${nexum.name}\n\n📋 ${selectedNumbers.join(', ')}\n💵 $${total}\n🎁 ${nxlAmount} NXL\n\n¿Confirmar?`)) {
+                alert('⏳ Procesando...');
+                
+                setTimeout(async () => {
+                    if (!userTickets[currentNexumId]) userTickets[currentNexumId] = [];
+                    userTickets[currentNexumId].push(...selectedNumbers);
+                    soldNumbers[currentNexumId].push(...selectedNumbers);
+                    userNXL += nxlAmount;
+                    
+                    const sold = soldNumbers[currentNexumId].length;
+                    document.getElementById(`sold-${currentNexumId}`).textContent = sold;
+                    document.getElementById(`progress-${currentNexumId}`).style.width = `${(sold/nexum.total)*100}%`;
+                    
+                    await updateMyAccount();
+                    alert(`✅ ¡Compra confirmada!\n\n${quantity} números\n+${nxlAmount} NXL`);
+                    closeModal();
+                }, 2000);
+            }
+        }
+
+        async function updateMyAccount() {
+            if (!account) return;
+
+            document.getElementById('nxl-balance').textContent = userNXL.toFixed(2);
+            document.getElementById('nxl-usd').textContent = (userNXL * 0.05).toFixed(2);
+
+            let ticketsHTML = '';
+            let hasTickets = false;
+            
+            for (let i = 0; i < nexumData.length; i++) {
+                if (userTickets[i] && userTickets[i].length > 0) {
+                    hasTickets = true;
+                    ticketsHTML += `
+                        <div class="bg-black/40 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="text-lg font-bold text-[#00FF41]">${nexumData[i].name}</h4>
+                                <span class="text-2xl font-black text-white">${userTickets[i].length} números</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                ${userTickets[i].map(num => `<span class="bg-[#00FF41]/20 border border-[#00FF41] px-3 py-1 rounded font-mono">${num}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            if (!hasTickets) {
+                ticketsHTML = '<p class="text-gray-400 text-center py-8">No tienes números aún</p>';
+            }
+
+            document.getElementById('my-tickets').innerHTML = ticketsHTML;
+        }
+
+        function copyReferralLink() {
+            const link = document.getElementById('referral-link').value;
+            if (link === 'Conecta tu wallet para obtener tu link') {
+                alert('🔗 Conecta tu wallet primero');
+                return;
+            }
+            navigator.clipboard.writeText(link);
+            alert('✅ Link copiado al portapapeles!');
+        }
+
+        document.getElementById('walletConnect').addEventListener('click', async () => {
+            try {
+                if (!window.ethereum) {
+                    if (confirm('❌ MetaMask no instalado\n\n¿Ver cómo comprar sin wallet?')) {
+                        showNoCryptoGuide();
+                    }
+                    return;
+                }
+                
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                provider = new window.ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner();
+                account = accounts[0];
+                
+                document.getElementById('walletText').textContent = `${account.slice(0,4)}...${account.slice(-4)}`;
+                
+                // Actualizar formulario embajador
+                document.getElementById('ref-wallet').value = account;
+                document.getElementById('referral-link').value = `https://nexalo.io?ref=${account}`;
+                
+                await updateMyAccount();
+                alert(`✅ Wallet conectada!\n\n${account}`);
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+            if (e.key === 'Enter' && document.getElementById('number-modal').classList.contains('active')) {
+                addNumber();
+            }
+        });
+    </script>
+</body>
+</html>
