@@ -12,14 +12,29 @@ interface INXLTokenBurnable is IERC20 {
     function burn(uint256 amount) external;
 }
 
+interface INXLTokenSnapshot is INXLTokenBurnable {
+    function snapshot() external returns (uint256);
+    function balanceOfAt(address account, uint256 snapshotId) external view returns (uint256);
+    function totalSupplyAt(uint256 snapshotId) external view returns (uint256);
+}
+
+interface INexaloStakingWBTC {
+    function fundRewards(uint256 amount) external;
+}
+
 /**
- * TreasuryBTC: recibe stable, puede depositar en strategy y abre ventana anual de redeem NXL->USDT
+ * TreasuryBTC:
+ * - Recibe stable, strategies Aave/Venus y ventana anual redeem NXL->USDT
+ * - Rewards mensuales WBTC holders NXL (snapshot + claim)
+ * - FIX H-04: usa circulatingSupplyAtSnapshot (no totalSupplyAt)
+ * - Best-effort claim: nunca revierte por falta de WBTC (evita DoS a holders)
+ * - Permite fundear staking sin tocar WBTC reservado de holders
  */
 contract TreasuryBTC is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable stablecoin;
-    INXLTokenBurnable public immutable nxlToken;
+    INXLTokenSnapshot public immutable nxlToken;
     address public immutable nexumManager;
 
     uint256 public accountedBalance;
@@ -46,9 +61,26 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
     uint256 public redeemRateE18;
     uint256 public nxlBurnedThisWindow;
 
-    // Audit funds (optional improvement)
     address public auditFunds;
     bool public auditFundsLocked;
+
+    IERC20 public immutable wbtc;
+
+    INexaloStakingWBTC public staking;
+
+    uint256 public reservedWBTC;
+
+    struct SnapshotRewards {
+        uint256 totalWBTC;
+        uint256 rewardPerTokenE18;
+        uint256 claimedWBTC;
+        uint256 circulatingAt;
+        bool exists;
+    }
+
+    mapping(uint256 => SnapshotRewards) public holderRewardsBySnapshot;
+    mapping(uint256 => mapping(address => uint256)) public claimedByUserGross;
+    mapping(uint256 => mapping(address => uint256)) public unpaidByUser;
 
     event FundsReceived(uint256 amount);
     event StrategySet(address aave, address venus);
@@ -63,6 +95,25 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
 
     event AuditFundsSet(address auditFunds);
 
+    event StakingSet(address staking);
+    event WBTCDeposited(address indexed from, uint256 amount);
+
+    event HolderRewardsSnapshotted(
+        uint256 indexed snapshotId,
+        uint256 totalWBTC,
+        uint256 rewardPerTokenE18,
+        uint256 circulatingAt
+    );
+
+    event HolderClaimedBestEffort(
+        address indexed user,
+        uint256 indexed snapshotId,
+        uint256 paid,
+        uint256 remainingUnpaid
+    );
+
+    event StakingFundedWBTC(uint256 amount);
+
     modifier onlyNexumManager() {
         require(msg.sender == nexumManager, "Only NexumManager");
         _;
@@ -72,17 +123,21 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
         address _stablecoin,
         address _nxlToken,
         address _nexumManager,
+        address _wbtc,
         uint256 _redeemWindowStart,
         uint256 _redeemWindowDuration
     ) Ownable(msg.sender) {
         require(_stablecoin != address(0), "Invalid stablecoin");
         require(_nxlToken != address(0), "Invalid NXL");
         require(_nexumManager != address(0), "Invalid manager");
+        require(_wbtc != address(0), "Invalid WBTC");
         require(_redeemWindowDuration >= 1 days && _redeemWindowDuration <= 30 days, "Bad duration");
 
         stablecoin = IERC20(_stablecoin);
-        nxlToken = INXLTokenBurnable(_nxlToken);
+        nxlToken = INXLTokenSnapshot(_nxlToken);
         nexumManager = _nexumManager;
+
+        wbtc = IERC20(_wbtc);
 
         redeemWindowStart = _redeemWindowStart;
         redeemWindowPeriod = 365 days;
@@ -91,7 +146,10 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
         accountedBalance = stablecoin.balanceOf(address(this));
     }
 
-    // Permissionless reconciler
+    // =======================
+    // USDT reconciler
+    // =======================
+
     function receiveFunds() external nonReentrant {
         uint256 bal = stablecoin.balanceOf(address(this));
         if (bal > accountedBalance) {
@@ -114,7 +172,6 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
         accountedBalance = stablecoin.balanceOf(address(this));
     }
 
-    // Optional improvement for M-07: set audit funds once before lock
     function setAuditFunds(address _auditFunds) external onlyOwner {
         require(!auditFundsLocked, "Audit funds locked");
         require(_auditFunds != address(0), "Invalid auditFunds");
@@ -193,9 +250,6 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
         emit Harvested(address(activeStrategy), gained);
     }
 
-    /**
-     * H-04 fix: circulating supply = totalSupply - balance held by token contract itself.
-     */
     function _circulatingSupply() internal view returns (uint256) {
         uint256 total = nxlToken.totalSupply();
         uint256 heldByToken = nxlToken.balanceOf(address(nxlToken));
@@ -263,5 +317,116 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
         uint256 bal = stablecoin.balanceOf(address(this));
         uint256 strat = address(activeStrategy) == address(0) ? 0 : activeStrategy.totalAssets();
         return bal + strat;
+    }
+
+    // =======================
+    // WBTC holders rewards + staking funding
+    // =======================
+
+    function setStaking(address _staking) external onlyOwner {
+        require(_staking != address(0), "Invalid staking");
+        staking = INexaloStakingWBTC(_staking);
+        emit StakingSet(_staking);
+    }
+
+    function depositWBTC(uint256 amount) external nonReentrant {
+        require(amount > 0, "Amount=0");
+        wbtc.safeTransferFrom(msg.sender, address(this), amount);
+        emit WBTCDeposited(msg.sender, amount);
+    }
+
+    function snapshotAndAllocateHolderRewards(uint256 amount)
+        external
+        onlyOwner
+        nonReentrant
+        returns (uint256 snapshotId)
+    {
+        require(amount > 0, "Amount=0");
+        require(wbtc.balanceOf(address(this)) >= reservedWBTC + amount, "Insufficient unreserved WBTC");
+
+        snapshotId = nxlToken.snapshot();
+
+        uint256 totalAt = nxlToken.totalSupplyAt(snapshotId);
+        uint256 heldAt = nxlToken.balanceOfAt(address(nxlToken), snapshotId);
+        require(totalAt > heldAt, "No circulating supply at snapshot");
+        uint256 circulatingAt = totalAt - heldAt;
+
+        uint256 rpt = (amount * 1e18) / circulatingAt;
+
+        holderRewardsBySnapshot[snapshotId] = SnapshotRewards({
+            totalWBTC: amount,
+            rewardPerTokenE18: rpt,
+            claimedWBTC: 0,
+            circulatingAt: circulatingAt,
+            exists: true
+        });
+
+        reservedWBTC += amount;
+
+        emit HolderRewardsSnapshotted(snapshotId, amount, rpt, circulatingAt);
+    }
+
+    function pendingHolderRewards(uint256 snapshotId, address user) public view returns (uint256) {
+        SnapshotRewards memory s = holderRewardsBySnapshot[snapshotId];
+        if (!s.exists) return 0;
+
+        uint256 balAt = nxlToken.balanceOfAt(user, snapshotId);
+        uint256 gross = (balAt * s.rewardPerTokenE18) / 1e18;
+
+        uint256 claimedGross = claimedByUserGross[snapshotId][user];
+        uint256 unpaid = unpaidByUser[snapshotId][user];
+
+        if (gross <= claimedGross) return unpaid;
+        return (gross - claimedGross) + unpaid;
+    }
+
+    function claimHolderRewards(uint256 snapshotId) external nonReentrant {
+        SnapshotRewards storage s = holderRewardsBySnapshot[snapshotId];
+        require(s.exists, "Snapshot not found");
+
+        uint256 balAt = nxlToken.balanceOfAt(msg.sender, snapshotId);
+        uint256 gross = (balAt * s.rewardPerTokenE18) / 1e18;
+
+        uint256 claimedGross = claimedByUserGross[snapshotId][msg.sender];
+        uint256 unpaid = unpaidByUser[snapshotId][msg.sender];
+
+        uint256 owed = unpaid;
+        if (gross > claimedGross) owed += (gross - claimedGross);
+
+        require(owed > 0, "Nothing to claim");
+
+        uint256 available = wbtc.balanceOf(address(this));
+        uint256 toPay = owed > available ? available : owed;
+        uint256 remaining = owed - toPay;
+
+        claimedByUserGross[snapshotId][msg.sender] = gross;
+        unpaidByUser[snapshotId][msg.sender] = remaining;
+
+        if (toPay > 0) {
+            s.claimedWBTC += toPay;
+
+            if (reservedWBTC >= toPay) reservedWBTC -= toPay;
+            else reservedWBTC = 0;
+
+            wbtc.safeTransfer(msg.sender, toPay);
+        }
+
+        emit HolderClaimedBestEffort(msg.sender, snapshotId, toPay, remaining);
+    }
+
+    function fundStakingWBTC(uint256 amount) external onlyOwner nonReentrant {
+        require(address(staking) != address(0), "Staking not set");
+        require(amount > 0, "Amount=0");
+
+        uint256 bal = wbtc.balanceOf(address(this));
+        require(bal >= reservedWBTC + amount, "Not enough unreserved WBTC");
+
+        // OZ5: no safeApprove, usar forceApprove
+        wbtc.forceApprove(address(staking), 0);
+        wbtc.forceApprove(address(staking), amount);
+
+        staking.fundRewards(amount);
+
+        emit StakingFundedWBTC(amount);
     }
 }
