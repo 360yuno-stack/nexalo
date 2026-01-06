@@ -1,0 +1,49 @@
+# dependencies
+node_modules/
+
+# hardhat
+artifacts/
+cache/
+coverage/
+coverage.json
+
+# env
+.env
+.env.*
+
+# logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# frontend build
+dist/
+build/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Hardhat / builds
+artifacts/
+cache/
+reports/
+coverage/
+
+# Node
+node_modules/
+
+# Env
+.env
+.env.*
+
+# Local scripts / helpers (si no quieres subirlos)
+*.ps1
+*.sh
+*.bat
+
+# Local notes
+*ROADMAP*.txt
