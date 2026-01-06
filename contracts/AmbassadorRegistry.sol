@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * 5% ambassadors: pull payments, distributeFunds permissionless (delta balance).
+ * Fix M-02: no push, no revert por blacklist.
+ * BLINDA: no perder rewards al desactivar / reactivar.
  */
 contract AmbassadorRegistry is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -17,7 +19,8 @@ contract AmbassadorRegistry is Ownable, ReentrancyGuard {
     struct Ambassador {
         bool active;
         uint256 totalClaimed;
-        uint256 rewardDebtE18; // snapshot of accRewardPerActiveE18
+        uint256 rewardDebtE18;   // snapshot de accRewardPerActiveE18
+        uint256 storedRewards;   // rewards acumuladas ya cristalizadas (no se pierden al cambiar status)
         string name;
     }
 
@@ -47,6 +50,7 @@ contract AmbassadorRegistry is Ownable, ReentrancyGuard {
             active: true,
             totalClaimed: 0,
             rewardDebtE18: accRewardPerActiveE18,
+            storedRewards: 0,
             name: name
         });
 
@@ -60,7 +64,12 @@ contract AmbassadorRegistry is Ownable, ReentrancyGuard {
         require(bytes(a.name).length > 0, "Not registered");
         if (a.active == active) return;
 
-        // crystallize
+        // CRISTALIZA lo pendiente antes de cambiar status (para que no se pierda)
+        uint256 pendingNow = _pendingOnly(a);
+        if (pendingNow > 0) {
+            a.storedRewards += pendingNow;
+        }
+
         a.rewardDebtE18 = accRewardPerActiveE18;
 
         a.active = active;
@@ -82,20 +91,27 @@ contract AmbassadorRegistry is Ownable, ReentrancyGuard {
         emit FundsDistributed(delta, activeCount, accRewardPerActiveE18);
     }
 
-    function pendingRewards(address ambassador) public view returns (uint256) {
-        Ambassador memory a = ambassadors[ambassador];
+    function _pendingOnly(Ambassador memory a) private view returns (uint256) {
         if (bytes(a.name).length == 0) return 0;
         if (accRewardPerActiveE18 <= a.rewardDebtE18) return 0;
         return (accRewardPerActiveE18 - a.rewardDebtE18) / 1e18;
+    }
+
+    function pendingRewards(address ambassador) public view returns (uint256) {
+        Ambassador memory a = ambassadors[ambassador];
+        return a.storedRewards + _pendingOnly(a);
     }
 
     function claim() external nonReentrant {
         Ambassador storage a = ambassadors[msg.sender];
         require(bytes(a.name).length > 0, "Not registered");
 
-        uint256 amt = pendingRewards(msg.sender);
+        uint256 pendingNow = _pendingOnly(a);
+        uint256 amt = a.storedRewards + pendingNow;
         require(amt > 0, "Nothing to claim");
 
+        // actualiza estado antes de transfer (pull)
+        a.storedRewards = 0;
         a.rewardDebtE18 = accRewardPerActiveE18;
         a.totalClaimed += amt;
 
