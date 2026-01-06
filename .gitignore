@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+
+# hardhat
+artifacts/
+cache/
+coverage/
+coverage.json
+
+# env
+.env
+.env.*
+
+# logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# frontend build
+dist/
+build/
