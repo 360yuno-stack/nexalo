@@ -1,49 +1,52 @@
-# dependencies
+# -------------------------
+# Dependencies
+# -------------------------
 node_modules/
 
-# hardhat
-artifacts/
-cache/
-coverage/
-coverage.json
-
-# env
-.env
-.env.*
-
-# logs
-*.log
-
-# OS
-.DS_Store
-Thumbs.db
-
-# frontend build
-dist/
-build/
-
-# OS / Editor
-.DS_Store
-Thumbs.db
-.vscode/
-
-# Hardhat / builds
+# -------------------------
+# Hardhat / coverage outputs
+# -------------------------
 artifacts/
 cache/
 reports/
 coverage/
+coverage.json
 
-# Node
-node_modules/
-
-# Env
+# -------------------------
+# Environment / secrets
+# -------------------------
 .env
 .env.*
 
-# Local scripts / helpers (si no quieres subirlos)
-*.ps1
-*.sh
-*.bat
+# -------------------------
+# Logs
+# -------------------------
+*.log
 
-# Local notes
-*ROADMAP*.txt
+# -------------------------
+# OS / Editor
+# -------------------------
+.DS_Store
+Thumbs.db
+.vscode/
+
+# -------------------------
+# Frontend build outputs (si aplica)
+# -------------------------
+dist/
+build/
+
+# -------------------------
+# Local-only helper scripts (opcional)
+# En vez de ignorar TODOS .sh/.ps1, ignora solo los "local"
+# -------------------------
+*_local.sh
+*_local.ps1
+*_local.bat
+
+# -------------------------
+# Local notes (opcional)
+# Mejor ignorar "private" en vez de ROADMAP (roadmap suele ser audit/documentación)
+# -------------------------
+notes-private/
+private-notes/
