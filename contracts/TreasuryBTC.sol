@@ -1,279 +1,432 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import "./interfaces/IYieldStrategy.sol";
+
+interface INXLTokenBurnable is IERC20 {
+    function burn(uint256 amount) external;
+}
+
+interface INXLTokenSnapshot is INXLTokenBurnable {
+    function snapshot() external returns (uint256);
+    function balanceOfAt(address account, uint256 snapshotId) external view returns (uint256);
+    function totalSupplyAt(uint256 snapshotId) external view returns (uint256);
+}
+
+interface INexaloStakingWBTC {
+    function fundRewards(uint256 amount) external;
+}
 
 /**
- * @title TreasuryBTC
- * @notice Gestiona el 10% de fondos destinados a staking de BTC
- * @dev Recibe USDT del NexumManager, el Founder gestiona el staking externo,
- *      y distribuye rewards mensuales a holders de NXL
+ * TreasuryBTC:
+ * - Recibe stable, strategies Aave/Venus y ventana anual redeem NXL->USDT
+ * - Rewards mensuales WBTC holders NXL (snapshot + claim)
+ * - FIX H-04: usa circulatingSupplyAtSnapshot (no totalSupplyAt)
+ * - Best-effort claim: nunca revierte por falta de WBTC (evita DoS a holders)
+ * - Permite fundear staking sin tocar WBTC reservado de holders
  */
-contract TreasuryBTC is Ownable, ReentrancyGuard {
+contract TreasuryBTC is ReentrancyGuard, Ownable {
+    using SafeERC20 for IERC20;
 
     IERC20 public immutable stablecoin;
-    IERC20 public immutable nxlToken;
-    
-    address public immutable founder;
-    address public nexumManager;
-    
-    uint256 public totalDeposited;
-    uint256 public totalWithdrawnForStaking;
-    uint256 public totalRewardsDistributed;
-    
-    uint256 public constant MIN_WITHDRAWAL_INTERVAL = 30 days;
-    uint256 public lastWithdrawalTime;
-    
-    bool public stakingActive;
-    
-    struct RewardSnapshot {
-        uint256 timestamp;
-        uint256 totalRewards;
-        uint256 totalNXLSupply;
-        bool distributed;
-    }
-    
-    mapping(uint256 => RewardSnapshot) public rewardSnapshots;
-    uint256 public snapshotCount;
-    
-    mapping(address => mapping(uint256 => bool)) public userClaimed;
-    mapping(address => uint256) public totalClaimedByUser;
+    INXLTokenSnapshot public immutable nxlToken;
+    address public immutable nexumManager;
 
-    event FundsReceived(address indexed from, uint256 amount);
-    event FundsWithdrawnForStaking(address indexed to, uint256 amount);
-    event RewardsDeposited(uint256 indexed snapshotId, uint256 amount);
-    event RewardClaimed(address indexed user, uint256 indexed snapshotId, uint256 amount);
-    event StakingStatusChanged(bool active);
-    event NexumManagerSet(address indexed manager);
+    uint256 public accountedBalance;
+
+    uint256 public totalFromManager;
+    uint256 public totalHarvested;
+    uint256 public totalRedeemed;
+    uint256 public totalDepositedToStrat;
+    uint256 public totalWithdrawnFromStrat;
+
+    IYieldStrategy public strategyAave;
+    IYieldStrategy public strategyVenus;
+    IYieldStrategy public activeStrategy;
+
+    uint256 public immutable redeemWindowStart;
+    uint256 public immutable redeemWindowPeriod;
+    uint256 public immutable redeemWindowDuration;
+
+    uint256 public lastOpenedYear;
+    bool private lastOpenedYearInit;
+
+    bool public windowOpen;
+    uint256 public windowCloseTime;
+    uint256 public redeemRateE18;
+    uint256 public nxlBurnedThisWindow;
+
+    address public auditFunds;
+    bool public auditFundsLocked;
+
+    IERC20 public immutable wbtc;
+
+    INexaloStakingWBTC public staking;
+
+    uint256 public reservedWBTC;
+
+    struct SnapshotRewards {
+        uint256 totalWBTC;
+        uint256 rewardPerTokenE18;
+        uint256 claimedWBTC;
+        uint256 circulatingAt;
+        bool exists;
+    }
+
+    mapping(uint256 => SnapshotRewards) public holderRewardsBySnapshot;
+    mapping(uint256 => mapping(address => uint256)) public claimedByUserGross;
+    mapping(uint256 => mapping(address => uint256)) public unpaidByUser;
+
+    event FundsReceived(uint256 amount);
+    event StrategySet(address aave, address venus);
+    event StrategyActivated(address strategy);
+    event DepositedToStrategy(address strategy, uint256 amount);
+    event WithdrawnFromStrategy(address strategy, uint256 amount);
+    event Harvested(address strategy, uint256 gained);
+
+    event WindowOpened(uint256 yearIndex, uint256 closeTime, uint256 redeemRateE18);
+    event Redeemed(address indexed user, uint256 nxlIn, uint256 usdtOut);
+    event WindowClosed(uint256 burned);
+
+    event AuditFundsSet(address auditFunds);
+
+    event StakingSet(address staking);
+    event WBTCDeposited(address indexed from, uint256 amount);
+
+    event HolderRewardsSnapshotted(
+        uint256 indexed snapshotId,
+        uint256 totalWBTC,
+        uint256 rewardPerTokenE18,
+        uint256 circulatingAt
+    );
+
+    event HolderClaimedBestEffort(
+        address indexed user,
+        uint256 indexed snapshotId,
+        uint256 paid,
+        uint256 remainingUnpaid
+    );
+
+    event StakingFundedWBTC(uint256 amount);
+
+    modifier onlyNexumManager() {
+        require(msg.sender == nexumManager, "Only NexumManager");
+        _;
+    }
 
     constructor(
         address _stablecoin,
         address _nxlToken,
-        address _founder
+        address _nexumManager,
+        address _wbtc,
+        uint256 _redeemWindowStart,
+        uint256 _redeemWindowDuration
     ) Ownable(msg.sender) {
         require(_stablecoin != address(0), "Invalid stablecoin");
-        require(_nxlToken != address(0), "Invalid NXL token");
-        require(_founder != address(0), "Invalid founder");
+        require(_nxlToken != address(0), "Invalid NXL");
+        require(_nexumManager != address(0), "Invalid manager");
+        require(_wbtc != address(0), "Invalid WBTC");
+        require(_redeemWindowDuration >= 1 days && _redeemWindowDuration <= 30 days, "Bad duration");
 
         stablecoin = IERC20(_stablecoin);
-        nxlToken = IERC20(_nxlToken);
-        founder = _founder;
-        stakingActive = false;
-    }
-
-    function setNexumManager(address _nexumManager) external onlyOwner {
-        require(nexumManager == address(0), "Already set");
-        require(_nexumManager != address(0), "Invalid address");
-        
+        nxlToken = INXLTokenSnapshot(_nxlToken);
         nexumManager = _nexumManager;
-        emit NexumManagerSet(_nexumManager);
+
+        wbtc = IERC20(_wbtc);
+
+        redeemWindowStart = _redeemWindowStart;
+        redeemWindowPeriod = 365 days;
+        redeemWindowDuration = _redeemWindowDuration;
+
+        accountedBalance = stablecoin.balanceOf(address(this));
     }
 
-    function setStakingStatus(bool _active) external onlyOwner {
-        stakingActive = _active;
-        emit StakingStatusChanged(_active);
-    }
+    // =======================
+    // USDT reconciler
+    // =======================
 
-    function receiveFunds() external {
-        uint256 balance = stablecoin.balanceOf(address(this));
-        uint256 newDeposit = balance - (totalDeposited - totalWithdrawnForStaking);
-        
-        if (newDeposit > 0) {
-            totalDeposited += newDeposit;
-            emit FundsReceived(msg.sender, newDeposit);
+    function receiveFunds() external nonReentrant {
+        uint256 bal = stablecoin.balanceOf(address(this));
+        if (bal > accountedBalance) {
+            uint256 delta = bal - accountedBalance;
+            accountedBalance = bal;
+            emit FundsReceived(delta);
+        } else if (bal < accountedBalance) {
+            accountedBalance = bal;
         }
     }
 
-    function depositFunds(uint256 amount) external {
-        require(amount > 0, "Amount must be > 0");
-        require(
-            stablecoin.transferFrom(msg.sender, address(this), amount),
-            "Transfer failed"
-        );
-        
-        totalDeposited += amount;
-        emit FundsReceived(msg.sender, amount);
+    function onFundsReceived(uint256 amount) external onlyNexumManager nonReentrant {
+        require(amount > 0, "Amount=0");
+        totalFromManager += amount;
+        _syncBalance();
+        emit FundsReceived(amount);
     }
 
-    function withdrawForStaking(uint256 amount) external onlyOwner {
-        require(msg.sender == founder || msg.sender == owner(), "Only founder");
-        require(stakingActive, "Staking not active");
-        require(amount > 0, "Amount must be > 0");
-        require(
-            block.timestamp >= lastWithdrawalTime + MIN_WITHDRAWAL_INTERVAL,
-            "Must wait 30 days"
-        );
-        
-        uint256 availableBalance = stablecoin.balanceOf(address(this));
-        require(availableBalance >= amount, "Insufficient balance");
-        
-        lastWithdrawalTime = block.timestamp;
-        totalWithdrawnForStaking += amount;
-        
-        require(stablecoin.transfer(founder, amount), "Transfer failed");
-        emit FundsWithdrawnForStaking(founder, amount);
+    function _syncBalance() private {
+        accountedBalance = stablecoin.balanceOf(address(this));
     }
 
-    function depositMonthlyRewards(uint256 rewardAmount) external onlyOwner {
-        require(rewardAmount > 0, "Amount must be > 0");
-        
-        require(
-            stablecoin.transferFrom(msg.sender, address(this), rewardAmount),
-            "Transfer failed"
-        );
-        
-        uint256 snapshotId = snapshotCount;
-        uint256 totalSupply = nxlToken.totalSupply();
-        
-        rewardSnapshots[snapshotId] = RewardSnapshot({
-            timestamp: block.timestamp,
-            totalRewards: rewardAmount,
-            totalNXLSupply: totalSupply,
-            distributed: false
+    function setAuditFunds(address _auditFunds) external onlyOwner {
+        require(!auditFundsLocked, "Audit funds locked");
+        require(_auditFunds != address(0), "Invalid auditFunds");
+        auditFunds = _auditFunds;
+        auditFundsLocked = true;
+        emit AuditFundsSet(_auditFunds);
+    }
+
+    function setStrategies(address _aave, address _venus) external onlyOwner nonReentrant {
+        require(address(strategyAave) == address(0) && address(strategyVenus) == address(0), "Already set");
+        require(_aave != address(0) && _venus != address(0), "Invalid");
+
+        strategyAave = IYieldStrategy(_aave);
+        strategyVenus = IYieldStrategy(_venus);
+
+        require(strategyAave.stablecoin() == address(stablecoin), "Aave stable mismatch");
+        require(strategyVenus.stablecoin() == address(stablecoin), "Venus stable mismatch");
+        require(strategyAave.treasury() == address(this), "Aave treasury mismatch");
+        require(strategyVenus.treasury() == address(this), "Venus treasury mismatch");
+
+        activeStrategy = strategyAave;
+
+        emit StrategySet(_aave, _venus);
+        emit StrategyActivated(address(activeStrategy));
+    }
+
+    function activateStrategy(bool useAave) external onlyOwner nonReentrant {
+        require(address(strategyAave) != address(0), "Strategies not set");
+        activeStrategy = useAave ? strategyAave : strategyVenus;
+        emit StrategyActivated(address(activeStrategy));
+    }
+
+    function depositToStrategy(uint256 amount) external onlyOwner nonReentrant {
+        require(address(activeStrategy) != address(0), "No strategy");
+        require(amount > 0, "Amount=0");
+        require(stablecoin.balanceOf(address(this)) >= amount, "Insufficient balance");
+
+        stablecoin.forceApprove(address(activeStrategy), 0);
+        stablecoin.forceApprove(address(activeStrategy), amount);
+
+        activeStrategy.deposit(amount);
+
+        totalDepositedToStrat += amount;
+        _syncBalance();
+
+        emit DepositedToStrategy(address(activeStrategy), amount);
+    }
+
+    function withdrawFromStrategy(uint256 amount) external onlyOwner nonReentrant {
+        require(address(activeStrategy) != address(0), "No strategy");
+        require(amount > 0, "Amount=0");
+
+        activeStrategy.withdraw(amount);
+
+        totalWithdrawnFromStrat += amount;
+        _syncBalance();
+
+        emit WithdrawnFromStrategy(address(activeStrategy), amount);
+    }
+
+    function withdrawAllFromStrategy() external onlyOwner nonReentrant {
+        require(address(activeStrategy) != address(0), "No strategy");
+        uint256 got = activeStrategy.withdrawAll();
+        totalWithdrawnFromStrat += got;
+        _syncBalance();
+        emit WithdrawnFromStrategy(address(activeStrategy), got);
+    }
+
+    function harvest() external onlyOwner nonReentrant returns (uint256 gained) {
+        require(address(activeStrategy) != address(0), "No strategy");
+        gained = activeStrategy.harvest();
+        if (gained > 0) {
+            totalHarvested += gained;
+            _syncBalance();
+        }
+        emit Harvested(address(activeStrategy), gained);
+    }
+
+    function _circulatingSupply() internal view returns (uint256) {
+        uint256 total = nxlToken.totalSupply();
+        uint256 heldByToken = nxlToken.balanceOf(address(nxlToken));
+        if (total > heldByToken) return total - heldByToken;
+        return 0;
+    }
+
+    function openRedeemWindow() external nonReentrant {
+        require(block.timestamp >= redeemWindowStart, "Not started");
+        require(!windowOpen, "Already open");
+
+        uint256 yearIndex = (block.timestamp - redeemWindowStart) / redeemWindowPeriod;
+
+        if (!lastOpenedYearInit) {
+            lastOpenedYearInit = true;
+        } else {
+            require(yearIndex != lastOpenedYear, "Already opened this year");
+        }
+
+        uint256 usdtBal = stablecoin.balanceOf(address(this));
+        require(usdtBal > 0, "No USDT liquidity");
+
+        uint256 circ = _circulatingSupply();
+        require(circ > 0, "No circulating supply");
+
+        redeemRateE18 = (usdtBal * 1e18) / circ;
+
+        windowOpen = true;
+        windowCloseTime = block.timestamp + redeemWindowDuration;
+        lastOpenedYear = yearIndex;
+        nxlBurnedThisWindow = 0;
+
+        emit WindowOpened(yearIndex, windowCloseTime, redeemRateE18);
+    }
+
+    function redeem(uint256 nxlAmount) external nonReentrant {
+        require(windowOpen, "Window closed");
+        require(block.timestamp <= windowCloseTime, "Window expired");
+        require(nxlAmount > 0, "Amount=0");
+
+        uint256 usdtOut = (nxlAmount * redeemRateE18) / 1e18;
+        require(usdtOut > 0, "Too small");
+        require(stablecoin.balanceOf(address(this)) >= usdtOut, "Insufficient USDT");
+
+        IERC20(address(nxlToken)).safeTransferFrom(msg.sender, address(this), nxlAmount);
+        nxlToken.burn(nxlAmount);
+
+        nxlBurnedThisWindow += nxlAmount;
+        totalRedeemed += usdtOut;
+
+        stablecoin.safeTransfer(msg.sender, usdtOut);
+        _syncBalance();
+
+        emit Redeemed(msg.sender, nxlAmount, usdtOut);
+    }
+
+    function closeRedeemWindow() external nonReentrant {
+        require(windowOpen, "Not open");
+        require(block.timestamp > windowCloseTime, "Not expired");
+        windowOpen = false;
+        emit WindowClosed(nxlBurnedThisWindow);
+    }
+
+    function totalAssets() external view returns (uint256) {
+        uint256 bal = stablecoin.balanceOf(address(this));
+        uint256 strat = address(activeStrategy) == address(0) ? 0 : activeStrategy.totalAssets();
+        return bal + strat;
+    }
+
+    // =======================
+    // WBTC holders rewards + staking funding
+    // =======================
+
+    function setStaking(address _staking) external onlyOwner {
+        require(_staking != address(0), "Invalid staking");
+        staking = INexaloStakingWBTC(_staking);
+        emit StakingSet(_staking);
+    }
+
+    function depositWBTC(uint256 amount) external nonReentrant {
+        require(amount > 0, "Amount=0");
+        wbtc.safeTransferFrom(msg.sender, address(this), amount);
+        emit WBTCDeposited(msg.sender, amount);
+    }
+
+    function snapshotAndAllocateHolderRewards(uint256 amount)
+        external
+        onlyOwner
+        nonReentrant
+        returns (uint256 snapshotId)
+    {
+        require(amount > 0, "Amount=0");
+        require(wbtc.balanceOf(address(this)) >= reservedWBTC + amount, "Insufficient unreserved WBTC");
+
+        snapshotId = nxlToken.snapshot();
+
+        uint256 totalAt = nxlToken.totalSupplyAt(snapshotId);
+        uint256 heldAt = nxlToken.balanceOfAt(address(nxlToken), snapshotId);
+        require(totalAt > heldAt, "No circulating supply at snapshot");
+        uint256 circulatingAt = totalAt - heldAt;
+
+        uint256 rpt = (amount * 1e18) / circulatingAt;
+
+        holderRewardsBySnapshot[snapshotId] = SnapshotRewards({
+            totalWBTC: amount,
+            rewardPerTokenE18: rpt,
+            claimedWBTC: 0,
+            circulatingAt: circulatingAt,
+            exists: true
         });
-        
-        snapshotCount++;
-        emit RewardsDeposited(snapshotId, rewardAmount);
+
+        reservedWBTC += amount;
+
+        emit HolderRewardsSnapshotted(snapshotId, amount, rpt, circulatingAt);
     }
 
-    function claimRewards(uint256 snapshotId) external nonReentrant {
-        require(snapshotId < snapshotCount, "Invalid snapshot");
-        require(!userClaimed[msg.sender][snapshotId], "Already claimed");
-        
-        RewardSnapshot memory snapshot = rewardSnapshots[snapshotId];
-        require(snapshot.totalRewards > 0, "No rewards");
-        
-        uint256 userBalance = nxlToken.balanceOf(msg.sender);
-        require(userBalance > 0, "No NXL balance");
-        
-        uint256 userReward = (snapshot.totalRewards * userBalance) / snapshot.totalNXLSupply;
-        require(userReward > 0, "Reward too small");
-        
-        userClaimed[msg.sender][snapshotId] = true;
-        totalClaimedByUser[msg.sender] += userReward;
-        totalRewardsDistributed += userReward;
-        
-        require(stablecoin.transfer(msg.sender, userReward), "Transfer failed");
-        emit RewardClaimed(msg.sender, snapshotId, userReward);
+    function pendingHolderRewards(uint256 snapshotId, address user) public view returns (uint256) {
+        SnapshotRewards memory s = holderRewardsBySnapshot[snapshotId];
+        if (!s.exists) return 0;
+
+        uint256 balAt = nxlToken.balanceOfAt(user, snapshotId);
+        uint256 gross = (balAt * s.rewardPerTokenE18) / 1e18;
+
+        uint256 claimedGross = claimedByUserGross[snapshotId][user];
+        uint256 unpaid = unpaidByUser[snapshotId][user];
+
+        if (gross <= claimedGross) return unpaid;
+        return (gross - claimedGross) + unpaid;
     }
 
-    function claimMultipleRewards(uint256[] calldata snapshotIds) external nonReentrant {
-        uint256 totalReward = 0;
-        
-        for (uint256 i = 0; i < snapshotIds.length; i++) {
-            uint256 snapshotId = snapshotIds[i];
-            
-            if (snapshotId >= snapshotCount) continue;
-            if (userClaimed[msg.sender][snapshotId]) continue;
-            
-            RewardSnapshot memory snapshot = rewardSnapshots[snapshotId];
-            if (snapshot.totalRewards == 0) continue;
-            
-            uint256 userBalance = nxlToken.balanceOf(msg.sender);
-            if (userBalance == 0) continue;
-            
-            uint256 userReward = (snapshot.totalRewards * userBalance) / snapshot.totalNXLSupply;
-            if (userReward == 0) continue;
-            
-            userClaimed[msg.sender][snapshotId] = true;
-            totalReward += userReward;
-            
-            emit RewardClaimed(msg.sender, snapshotId, userReward);
+    function claimHolderRewards(uint256 snapshotId) external nonReentrant {
+        SnapshotRewards storage s = holderRewardsBySnapshot[snapshotId];
+        require(s.exists, "Snapshot not found");
+
+        uint256 balAt = nxlToken.balanceOfAt(msg.sender, snapshotId);
+        uint256 gross = (balAt * s.rewardPerTokenE18) / 1e18;
+
+        uint256 claimedGross = claimedByUserGross[snapshotId][msg.sender];
+        uint256 unpaid = unpaidByUser[snapshotId][msg.sender];
+
+        uint256 owed = unpaid;
+        if (gross > claimedGross) owed += (gross - claimedGross);
+
+        require(owed > 0, "Nothing to claim");
+
+        uint256 available = wbtc.balanceOf(address(this));
+        uint256 toPay = owed > available ? available : owed;
+        uint256 remaining = owed - toPay;
+
+        claimedByUserGross[snapshotId][msg.sender] = gross;
+        unpaidByUser[snapshotId][msg.sender] = remaining;
+
+        if (toPay > 0) {
+            s.claimedWBTC += toPay;
+
+            if (reservedWBTC >= toPay) reservedWBTC -= toPay;
+            else reservedWBTC = 0;
+
+            wbtc.safeTransfer(msg.sender, toPay);
         }
-        
-        require(totalReward > 0, "No rewards");
-        
-        totalClaimedByUser[msg.sender] += totalReward;
-        totalRewardsDistributed += totalReward;
-        
-        require(stablecoin.transfer(msg.sender, totalReward), "Transfer failed");
+
+        emit HolderClaimedBestEffort(msg.sender, snapshotId, toPay, remaining);
     }
 
-    function getPendingRewards(address user, uint256 snapshotId) external view returns (uint256) {
-        if (snapshotId >= snapshotCount) return 0;
-        if (userClaimed[user][snapshotId]) return 0;
-        
-        RewardSnapshot memory snapshot = rewardSnapshots[snapshotId];
-        if (snapshot.totalRewards == 0) return 0;
-        
-        uint256 userBalance = nxlToken.balanceOf(user);
-        if (userBalance == 0) return 0;
-        
-        return (snapshot.totalRewards * userBalance) / snapshot.totalNXLSupply;
-    }
+    function fundStakingWBTC(uint256 amount) external onlyOwner nonReentrant {
+        require(address(staking) != address(0), "Staking not set");
+        require(amount > 0, "Amount=0");
 
-    function getTotalPendingRewards(address user) external view returns (uint256 total) {
-        for (uint256 i = 0; i < snapshotCount; i++) {
-            if (userClaimed[user][i]) continue;
-            
-            RewardSnapshot memory snapshot = rewardSnapshots[i];
-            if (snapshot.totalRewards == 0) continue;
-            
-            uint256 userBalance = nxlToken.balanceOf(user);
-            if (userBalance == 0) continue;
-            
-            total += (snapshot.totalRewards * userBalance) / snapshot.totalNXLSupply;
-        }
-    }
+        uint256 bal = wbtc.balanceOf(address(this));
+        require(bal >= reservedWBTC + amount, "Not enough unreserved WBTC");
 
-    function getContractInfo() external view returns (
-        uint256 balance,
-        uint256 deposited,
-        uint256 withdrawnForStaking,
-        uint256 rewardsDistributed,
-        uint256 snapshots,
-        bool isStakingActive,
-        uint256 lastWithdrawal,
-        uint256 nextWithdrawalAvailable
-    ) {
-        uint256 nextAvailable = 0;
-        if (lastWithdrawalTime > 0) {
-            nextAvailable = lastWithdrawalTime + MIN_WITHDRAWAL_INTERVAL;
-        }
-        
-        return (
-            stablecoin.balanceOf(address(this)),
-            totalDeposited,
-            totalWithdrawnForStaking,
-            totalRewardsDistributed,
-            snapshotCount,
-            stakingActive,
-            lastWithdrawalTime,
-            nextAvailable
-        );
-    }
+        // OZ5: no safeApprove, usar forceApprove
+        wbtc.forceApprove(address(staking), 0);
+        wbtc.forceApprove(address(staking), amount);
 
-    function getSnapshotInfo(uint256 snapshotId) external view returns (
-        uint256 timestamp,
-        uint256 totalRewards,
-        uint256 totalSupply,
-        bool distributed
-    ) {
-        require(snapshotId < snapshotCount, "Invalid snapshot");
-        RewardSnapshot memory snapshot = rewardSnapshots[snapshotId];
-        
-        return (
-            snapshot.timestamp,
-            snapshot.totalRewards,
-            snapshot.totalNXLSupply,
-            snapshot.distributed
-        );
-    }
+        staking.fundRewards(amount);
 
-    function emergencyWithdraw(uint256 amount) external onlyOwner {
-        require(amount > 0, "Amount must be > 0");
-        uint256 balance = stablecoin.balanceOf(address(this));
-        require(balance >= amount, "Insufficient balance");
-        
-        require(stablecoin.transfer(owner(), amount), "Transfer failed");
-    }
-
-    function recoverERC20(address tokenAddress, uint256 amount) external onlyOwner {
-        require(tokenAddress != address(stablecoin), "Cannot recover stablecoin");
-        require(amount > 0, "Amount must be > 0");
-        
-        IERC20(tokenAddress).transfer(owner(), amount);
+        emit StakingFundedWBTC(amount);
     }
 }
