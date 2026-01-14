@@ -1,195 +1,146 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @title NexaloStaking
- * @notice Stake NXL, rewards en WBTC (funded, pro-rata).
- * @dev Fix auditoría [M-09]:
- *  - Nunca revierte stake/unstake/claim por falta de WBTC.
- *  - Si Treasury fondea cuando no hay stakers, se guarda en buffer y se distribuye luego.
+ * Staking de NXL con rewards en WBTC.
+ * - stake/withdraw/claim/exit
+ * - fundRewards SOLO puede llamarlo Treasury
+ * - rewards lineales en el tiempo (duration configurable al deploy)
  */
-contract NexaloStaking is ReentrancyGuard, Ownable {
+contract NexaloStakingWBTC is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable nxl;
     IERC20 public immutable wbtc;
+    address public immutable treasury;
 
     uint256 public totalStaked;
-    uint256 public accRewardPerShareE18; // scaled 1e18
-    uint256 public constant ACC = 1e18;
 
-    // NUEVO: WBTC fondeado cuando no hay stakers (o cuando no se pudo distribuir)
-    uint256 public fundedButUndistributed;
+    mapping(address => uint256) public balanceOf;
 
-    struct UserInfo {
-        uint256 amount;
-        uint256 rewardDebt;
-        uint256 totalClaimed;
-        uint256 unpaidRewards; // deuda acumulada si no hay WBTC suficiente
-    }
+    // ===== rewards accounting (Synthetix style) =====
+    uint256 public rewardPerTokenStoredE18;
+    uint256 public lastUpdateTime;
+    uint256 public rewardRate; // WBTC per second
+    uint256 public periodFinish;
+    uint256 public rewardsDuration; // e.g. 30 days
 
-    mapping(address => UserInfo) public users;
+    mapping(address => uint256) public userRewardPerTokenPaidE18;
+    mapping(address => uint256) public rewards; // accrued WBTC
 
     event Staked(address indexed user, uint256 amount);
-    event Unstaked(address indexed user, uint256 amount);
-    event RewardsFunded(address indexed funder, uint256 amount);
-    event BufferedRewards(address indexed funder, uint256 amount);
-    event DistributedBufferedRewards(uint256 amount);
-    event Claimed(address indexed user, uint256 amount);
+    event Withdrawn(address indexed user, uint256 amount);
+    event RewardPaid(address indexed user, uint256 reward);
 
-    constructor(address _nxl, address _wbtc) Ownable(msg.sender) {
-        require(_nxl != address(0) && _wbtc != address(0), "Invalid token");
+    event RewardsFunded(uint256 amount, uint256 rewardRate, uint256 periodFinish);
+    event RewardsDurationSet(uint256 duration);
+
+    modifier onlyTreasury() {
+        require(msg.sender == treasury, "Only treasury");
+        _;
+    }
+
+    constructor(address _nxl, address _wbtc, address _treasury, uint256 _rewardsDuration) {
+        require(_nxl != address(0) && _wbtc != address(0) && _treasury != address(0), "Bad params");
+        require(_rewardsDuration >= 1 days && _rewardsDuration <= 365 days, "Bad duration");
         nxl = IERC20(_nxl);
         wbtc = IERC20(_wbtc);
+        treasury = _treasury;
+        rewardsDuration = _rewardsDuration;
+        emit RewardsDurationSet(_rewardsDuration);
     }
 
-    function pendingRewards(address user) public view returns (uint256) {
-        UserInfo memory u = users[user];
-        if (u.amount == 0) return u.unpaidRewards;
-
-        uint256 accumulated = (u.amount * accRewardPerShareE18) / ACC;
-        if (accumulated <= u.rewardDebt) return u.unpaidRewards;
-
-        return (accumulated - u.rewardDebt) + u.unpaidRewards;
+    function lastTimeRewardApplicable() public view returns (uint256) {
+        return block.timestamp < periodFinish ? block.timestamp : periodFinish;
     }
 
-    function _updateDebt(address user) private {
-        UserInfo storage u = users[user];
-        u.rewardDebt = (u.amount * accRewardPerShareE18) / ACC;
+    function rewardPerToken() public view returns (uint256) {
+        if (totalStaked == 0) return rewardPerTokenStoredE18;
+        uint256 dt = lastTimeRewardApplicable() - lastUpdateTime;
+        return rewardPerTokenStoredE18 + ((dt * rewardRate * 1e18) / totalStaked);
     }
 
-    function _distribute(uint256 amount) private {
-        // amount ya está en el contrato (WBTC)
-        if (amount == 0) return;
-        if (totalStaked == 0) {
-            fundedButUndistributed += amount;
-            emit DistributedBufferedRewards(0);
-            return;
-        }
-        accRewardPerShareE18 += (amount * ACC) / totalStaked;
+    function earned(address account) public view returns (uint256) {
+        uint256 rpt = rewardPerToken();
+        uint256 paid = userRewardPerTokenPaidE18[account];
+        return rewards[account] + ((balanceOf[account] * (rpt - paid)) / 1e18);
     }
 
-    function _distributeBufferedIfPossible() private {
-        if (fundedButUndistributed == 0) return;
-        if (totalStaked == 0) return;
+    function _updateReward(address account) internal {
+        rewardPerTokenStoredE18 = rewardPerToken();
+        lastUpdateTime = lastTimeRewardApplicable();
 
-        uint256 amt = fundedButUndistributed;
-        fundedButUndistributed = 0;
-
-        accRewardPerShareE18 += (amt * ACC) / totalStaked;
-        emit DistributedBufferedRewards(amt);
-    }
-
-    /**
-     * @notice Fondea rewards en WBTC. Puede llamar TreasuryBTC.
-     * @dev Si no hay stakers, se guarda en buffer (no revierte).
-     */
-    function fundRewards(uint256 amount) external nonReentrant {
-        require(amount > 0, "Amount=0");
-
-        // Pull WBTC from funder
-        wbtc.safeTransferFrom(msg.sender, address(this), amount);
-
-        if (totalStaked == 0) {
-            fundedButUndistributed += amount;
-            emit BufferedRewards(msg.sender, amount);
-        } else {
-            accRewardPerShareE18 += (amount * ACC) / totalStaked;
-            emit RewardsFunded(msg.sender, amount);
+        if (account != address(0)) {
+            rewards[account] = earned(account);
+            userRewardPerTokenPaidE18[account] = rewardPerTokenStoredE18;
         }
     }
 
     function stake(uint256 amount) external nonReentrant {
         require(amount > 0, "Amount=0");
+        _updateReward(msg.sender);
 
-        // primero distribuye buffer si ya hay stakers (por si justo se quedó pendiente)
-        _distributeBufferedIfPossible();
-
-        // claim pending first (sin DOS)
-        _claim(msg.sender);
+        totalStaked += amount;
+        balanceOf[msg.sender] += amount;
 
         nxl.safeTransferFrom(msg.sender, address(this), amount);
-
-        UserInfo storage u = users[msg.sender];
-        u.amount += amount;
-        totalStaked += amount;
-
-        // si este es el primer staker, ahora sí podemos distribuir el buffer
-        _distributeBufferedIfPossible();
-
-        _updateDebt(msg.sender);
-
         emit Staked(msg.sender, amount);
     }
 
-    function unstake(uint256 amount) external nonReentrant {
+    function withdraw(uint256 amount) public nonReentrant {
         require(amount > 0, "Amount=0");
-        UserInfo storage u = users[msg.sender];
-        require(u.amount >= amount, "Insufficient staked");
+        require(balanceOf[msg.sender] >= amount, "Insufficient stake");
+        _updateReward(msg.sender);
 
-        _distributeBufferedIfPossible();
-
-        // claim pending first (sin DOS)
-        _claim(msg.sender);
-
-        u.amount -= amount;
+        balanceOf[msg.sender] -= amount;
         totalStaked -= amount;
 
-        _updateDebt(msg.sender);
-
         nxl.safeTransfer(msg.sender, amount);
-        emit Unstaked(msg.sender, amount);
+        emit Withdrawn(msg.sender, amount);
     }
 
-    function claimRewards() external nonReentrant {
-        _distributeBufferedIfPossible();
-        _claim(msg.sender);
-        _updateDebt(msg.sender);
+    function claim() public nonReentrant {
+        _updateReward(msg.sender);
+
+        uint256 reward = rewards[msg.sender];
+        require(reward > 0, "No rewards");
+
+        rewards[msg.sender] = 0;
+        wbtc.safeTransfer(msg.sender, reward);
+        emit RewardPaid(msg.sender, reward);
     }
 
-    function _claim(address user) private {
-        UserInfo storage u = users[user];
-
-        // calcula el “nuevo pending” desde accRewardPerShareE18
-        uint256 newPending = 0;
-        if (u.amount > 0) {
-            uint256 accumulated = (u.amount * accRewardPerShareE18) / ACC;
-            if (accumulated > u.rewardDebt) {
-                newPending = accumulated - u.rewardDebt;
-            }
-        }
-
-        uint256 totalOwed = u.unpaidRewards + newPending;
-        if (totalOwed == 0) {
-            _updateDebt(user);
-            return;
-        }
-
-        uint256 available = wbtc.balanceOf(address(this));
-        uint256 toPay = totalOwed > available ? available : totalOwed;
-
-        // guarda lo que queda como deuda
-        u.unpaidRewards = totalOwed - toPay;
-
-        if (toPay > 0) {
-            u.totalClaimed += toPay;
-            wbtc.safeTransfer(user, toPay);
-            emit Claimed(user, toPay);
-        }
-
-        // IMPORTANT: actualiza debt después de contabilizar newPending
-        _updateDebt(user);
+    function exit() external {
+        withdraw(balanceOf[msg.sender]);
+        claim();
     }
 
-    function rescueTokens(address token, uint256 amount) external onlyOwner {
-        require(token != address(nxl) && token != address(wbtc), "Protected");
-        IERC20(token).safeTransfer(owner(), amount);
+    /// @notice Treasury deposita WBTC y arranca (o renueva) un periodo lineal de rewards.
+    function fundRewards(uint256 amount) external onlyTreasury nonReentrant {
+        require(amount > 0, "Amount=0");
+        _updateReward(address(0));
+
+        // trae WBTC desde treasury
+        wbtc.safeTransferFrom(msg.sender, address(this), amount);
+
+        // si hay periodo activo, agregamos leftover
+        uint256 leftover = 0;
+        if (block.timestamp < periodFinish) {
+            uint256 remaining = periodFinish - block.timestamp;
+            leftover = remaining * rewardRate;
+        }
+
+        uint256 total = amount + leftover;
+        rewardRate = total / rewardsDuration;
+        require(rewardRate > 0, "RewardRate=0");
+
+        lastUpdateTime = block.timestamp;
+        periodFinish = block.timestamp + rewardsDuration;
+
+        emit RewardsFunded(amount, rewardRate, periodFinish);
     }
 }
-
-
