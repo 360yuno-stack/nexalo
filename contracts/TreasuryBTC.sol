@@ -396,8 +396,9 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
         require(owed > 0, "Nothing to claim");
 
         uint256 available = wbtc.balanceOf(address(this));
-        uint256 toPay = owed > available ? available : owed;
-        uint256 remaining = owed - toPay;
+        require(available >= owed, "Insufficient Treasury Balance");
+        uint256 toPay = owed;
+        uint256 remaining = 0;
 
         claimedByUserGross[snapshotId][msg.sender] = gross;
         unpaidByUser[snapshotId][msg.sender] = remaining;
