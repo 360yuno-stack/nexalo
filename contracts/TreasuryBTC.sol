@@ -253,7 +253,10 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
     function _circulatingSupply() internal view returns (uint256) {
         uint256 total = nxlToken.totalSupply();
         uint256 heldByToken = nxlToken.balanceOf(address(nxlToken));
-        if (total > heldByToken) return total - heldByToken;
+        uint256 heldByTreasury = nxlToken.balanceOf(address(this));
+        
+        uint256 idle = heldByToken + heldByTreasury;
+        if (total > idle) return total - idle;
         return 0;
     }
 
@@ -348,8 +351,11 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
 
         uint256 totalAt = nxlToken.totalSupplyAt(snapshotId);
         uint256 heldAt = nxlToken.balanceOfAt(address(nxlToken), snapshotId);
-        require(totalAt > heldAt, "No circulating supply at snapshot");
-        uint256 circulatingAt = totalAt - heldAt;
+        uint256 treasuryAt = nxlToken.balanceOfAt(address(this), snapshotId);
+        
+        uint256 idleAt = heldAt + treasuryAt;
+        require(totalAt > idleAt, "No circulating supply at snapshot");
+        uint256 circulatingAt = totalAt - idleAt;
 
         uint256 rpt = (amount * 1e18) / circulatingAt;
 
