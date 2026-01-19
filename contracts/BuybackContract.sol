@@ -32,13 +32,16 @@ contract BuybackContract is Ownable, ReentrancyGuard {
 
     function receiveFunds() external nonReentrant {
         uint256 bal = stablecoin.balanceOf(address(this));
-        uint256 accounted = totalReceived - totalSpent; // totalSpent nunca debería superar totalReceived
-        require(bal > accounted, "No new funds");
+        uint256 accounted = totalReceived - totalSpent; 
 
-        uint256 delta = bal - accounted;
-        totalReceived += delta;
-
-        emit FundsReceived(msg.sender, delta);
+        if (bal > accounted) {
+            uint256 delta = bal - accounted;
+            totalReceived += delta;
+            emit FundsReceived(msg.sender, delta);
+        } else if (bal < accounted) {
+            uint256 loss = accounted - bal;
+            totalSpent += loss;
+        }
     }
 
     function spend(address to, uint256 amount) external onlyOwner nonReentrant {
