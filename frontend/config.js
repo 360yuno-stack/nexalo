@@ -1,5 +1,4 @@
 // config.js
-
 const CONFIG = {
   NETWORK: {
     chainId: "0x61",
@@ -12,17 +11,15 @@ const CONFIG = {
     ],
     blockExplorer: "https://testnet.bscscan.com"
   },
-
   CONTRACTS: {
-    USDT: "0xBd43EC0740B034dEDD5Cf7700c34DDDe9863e503",           // Stable USDT [file:36]
-    NXL_TOKEN: "0x49D76E9F9c7dB89A2ACC91F92ed24E922776F132",      // NXL token [file:26]
-    NEXUM_MANAGER: "0x6BC5AeED2Da2080A1cDcDF71020ef14cE1f9eAe5",  // NexumManager [file:36]
-    REFERRAL_NETWORK: "0x4161C922dFa61E4Faf244543C986041fE6683954", // ReferralNetwork [file:29]
-    AMBASSADOR_REGISTRY: "0x986d003d8c022Bef2d1F5BaA866b93002A5B3b46", // AmbassadorRegistry [file:32]
-    TREASURY_BTC: "0x0C2a9ccf74Bb658f152C7D837bc4051EAA96C786",   // TreasuryBTC [file:27]
-    BUYBACK_CONTRACT: "0x3DBA8365eB322Aec9f766353D7DB29d947Be205D" // Buyback [file:34]
+    USDT: "0xBd43EC0740B034dEDD5Cf7700c34DDDe9863e503",
+    NXL_TOKEN: "0x49D76E9F9c7dB89A2ACC91F92ed24E922776F132",
+    NEXUM_MANAGER: "0x6BC5AeED2Da2080A1cDcDF71020ef14cE1f9eAe5",
+    REFERRAL_NETWORK: "0x4161C922dFa61E4Faf244543C986041fE6683954",
+    AMBASSADOR_REGISTRY: "0x986d003d8c022Bef2d1F5BaA866b93002A5B3b46",
+    TREASURY_BTC: "0x0C2a9ccf74Bb658f152C7D837bc4051EAA96C786",
+    BUYBACK_CONTRACT: "0x3DBA8365eB322Aec9f766353D7DB29d947Be205D"
   },
-
   PRODUCTS: [
     { id: 0, name: "FLASH",     price: 1,   maxTickets: 1000,  nxlPerTicket: 0.1,  nxlWinnerBonus: 0.1,  jackpot: 500,      emoji: "⚡", digits: 3 },
     { id: 1, name: "ORIGINAL",  price: 1,   maxTickets: 10000, nxlPerTicket: 0.25, nxlWinnerBonus: 0.25, jackpot: 5000,     emoji: "🎯", digits: 4 },
@@ -34,9 +31,5 @@ const CONFIG = {
 };
 
 CONFIG.NEXUM_DATA = CONFIG.PRODUCTS;
-
-// Pon aquí tu projectId real de WalletConnect v2
 window.WALLETCONNECT_PROJECT_ID = "PON_AQUI_TU_PROJECT_ID";
-
-// Exponer en window
 window.CONFIG = CONFIG;

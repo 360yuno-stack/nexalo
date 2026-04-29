@@ -15,10 +15,17 @@ module.exports = {
   },
 
   networks: {
+    hardhat: {
+      chainId: 31337,
+      blockGasLimit: 150_000_000,
+      gas: 15_000_000,
+    },
     bscTestnet: {
-      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
-      chainId: 97,
+      url:
+        process.env.BSC_TESTNET_RPC_URL ||
+        "https://data-seed-prebsc-1-s1.binance.org:8545/",
       accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
+      chainId: 97,
     },
   },
 

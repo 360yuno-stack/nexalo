@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -50,7 +51,6 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         uint256 roundId;
 
         uint256 ticketsSold;
-        uint256 nextTicketCursor;
         bool completed;
 
         bool vrfRequested;
@@ -62,6 +62,12 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
 
         uint256 prizePot;
         uint256 instantPot;
+
+        uint256 liquidityTarget;
+        uint256 liquidityFunded;
+        uint256 liquidityProfitPool;
+        uint256 liquidityReturnedPrincipal;
+        bool liquiditySettled;
     }
 
     IERC20 public immutable stablecoin;
@@ -87,7 +93,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
     uint64 public immutable subscriptionId;
     bytes32 public immutable keyHash;
 
-    uint32 public callbackGasLimit = 220000;
+    uint32 public callbackGasLimit = 400000;
     uint16 public constant REQUEST_CONFIRMATIONS = 3;
     uint32 public constant NUM_WORDS = 1;
 
@@ -103,18 +109,27 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
     mapping(uint256 => mapping(uint256 => mapping(uint256 => address))) public ticketOwner;
     mapping(uint256 => mapping(uint256 => mapping(address => uint256[]))) public userTickets;
 
+    mapping(uint256 => mapping(uint256 => uint256[])) public availableTickets;
+    mapping(uint256 => mapping(uint256 => mapping(uint256 => uint256))) public ticketIndexInAvailable;
+
     mapping(uint256 => uint256) public vrfRequestToProduct;
     mapping(uint256 => uint256) public vrfRequestToRound;
 
     mapping(address => uint256) public claimableStable;
     mapping(address => uint256) public claimableNXL;
 
+    mapping(uint256 => mapping(uint256 => address[])) private roundInvestorList;
+    mapping(uint256 => mapping(uint256 => mapping(address => bool))) public roundInvestorKnown;
+    mapping(uint256 => mapping(uint256 => mapping(address => uint256))) public roundInvestorPrincipal;
+    mapping(uint256 => mapping(uint256 => mapping(address => uint256))) public roundInvestorReturned;
+
     uint256 public constant PCT_PRIZE_POOL   = 5000;
-    uint256 public constant PCT_FOUNDER      = 1000;
     uint256 public constant PCT_TREASURY_BTC = 1000;
     uint256 public constant PCT_INSTANT      = 1000;
     uint256 public constant PCT_REFERRALS    = 1000;
+    uint256 public constant PCT_FOUNDER      = 700;
     uint256 public constant PCT_AMBASSADORS  = 500;
+    uint256 public constant PCT_INVESTOR     = 300;
     uint256 public constant PCT_FEES         = 200;
     uint256 public constant PCT_OPS_SERVICE  = 100;
     uint256 public constant PCT_AUDIT        = 100;
@@ -123,6 +138,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
     bool public paused;
     bool public ecosystemLocked;
     bool public nxlTreasuryConfigured;
+    bool public globalStopped;
 
     event TicketsPurchased(
         uint256 indexed productId,
@@ -156,6 +172,13 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
 
     event NXLTokenTreasuryConfigured(address treasury);
 
+    event InstantRewardsDistributed(uint256 indexed productId, uint256 indexed roundId, uint256 totalPaid);
+    event GlobalStoppedAndNXLBurned(uint256 burnedAmount);
+
+    event RoundLiquidityProvided(uint256 indexed productId, uint256 indexed roundId, address indexed investor, uint256 amount, uint256 fundedAfter, uint256 target);
+    event RoundLiquiditySettled(uint256 indexed productId, uint256 indexed roundId, uint256 totalPrincipal, uint256 totalProfit);
+    event RoundInvestorAccrued(uint256 indexed productId, uint256 indexed roundId, address indexed investor, uint256 principal, uint256 profit, uint256 totalReturn);
+
     modifier whenNotPaused() {
         require(!paused, "Paused");
         _;
@@ -164,6 +187,11 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
     modifier validProduct(uint256 productId) {
         require(productId < PRODUCT_COUNT, "Invalid product");
         require(products[productId].active, "Product inactive");
+        _;
+    }
+
+    modifier whenNotStopped() {
+        require(!globalStopped, "Nexum stopped");
         _;
     }
 
@@ -203,7 +231,6 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
 
         founder = _founder;
         partner = _partner;
-
         feesReceiver = _feesReceiver;
         operationsService = _operationsService;
 
@@ -211,12 +238,16 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         auditFundsLocked = true;
 
         paused = true;
+        globalStopped = false;
 
+        console.log("NexumManager: constructor start");
         _initializeProducts();
-
+        console.log("NexumManager: products initialized");
         for (uint256 i = 0; i < PRODUCT_COUNT; i++) {
+            console.log("NexumManager: starting round for product", i);
             _startNewRound(i);
         }
+        console.log("NexumManager: constructor end");
     }
 
     function _usdToStable(uint256 usdE18) internal view returns (uint256) {
@@ -234,7 +265,13 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         products[5] = NexumProduct("BLACKBLOK", 200e18,      10000,   1e18,     1e18,     1000000e18,     true);
     }
 
-    // ========= CONFIG =========
+    function _instantExpectedForProduct(uint256 productId) internal view returns (uint256) {
+        NexumProduct memory product = products[productId];
+        uint256 tickets = product.maxTickets;
+        if (tickets == 0 || tickets % 1000 != 0) return 0;
+        uint256 factor = tickets / 1000;
+        return _usdToStable(product.priceUSDE18 * (100 * factor));
+    }
 
     function setEcosystemAddresses(address _treasuryBTC, address _referralNetwork, address _ambassadorRegistry) external onlyOwner {
         require(!ecosystemLocked, "Locked");
@@ -247,7 +284,6 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         emit EcosystemAddressesSet(_treasuryBTC, _referralNetwork, _ambassadorRegistry);
     }
 
-    /// @notice Debe llamarse ANTES de finalizeAutonomy()
     function configureNXLTokenTreasury(address _treasuryBTC) external onlyOwner {
         require(_treasuryBTC != address(0), "Invalid treasury");
         INXLTokenTreasuryConfig(address(nxlToken)).setTreasuryBTC(_treasuryBTC);
@@ -271,13 +307,95 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         renounceOwnership();
     }
 
-    // ========= BUY =========
+    function provideRoundLiquidity(uint256 productId, uint256 roundId, uint256 amount)
+        external
+        nonReentrant
+        whenNotPaused
+        whenNotStopped
+        validProduct(productId)
+    {
+        Round storage round = rounds[productId][roundId];
+        require(round.roundId == roundId && round.productId == productId, "Round not found");
+        require(!round.completed, "Round completed");
+        require(!round.vrfRequested, "Round closing");
+        require(amount > 0, "Amount zero");
+        require(round.liquidityFunded < round.liquidityTarget, "Liquidity full");
+
+        uint256 remaining = round.liquidityTarget - round.liquidityFunded;
+        uint256 accepted = amount > remaining ? remaining : amount;
+        require(accepted > 0, "Nothing accepted");
+
+        stablecoin.safeTransferFrom(msg.sender, address(this), accepted);
+
+        if (!roundInvestorKnown[productId][roundId][msg.sender]) {
+            roundInvestorKnown[productId][roundId][msg.sender] = true;
+            roundInvestorList[productId][roundId].push(msg.sender);
+        }
+
+        roundInvestorPrincipal[productId][roundId][msg.sender] += accepted;
+        round.liquidityFunded += accepted;
+
+        emit RoundLiquidityProvided(productId, roundId, msg.sender, accepted, round.liquidityFunded, round.liquidityTarget);
+    }
+
+    function getRoundInvestors(uint256 productId, uint256 roundId) external view returns (address[] memory) {
+        return roundInvestorList[productId][roundId];
+    }
+
+    function getRoundLiquidityStatus(uint256 productId, uint256 roundId)
+        external
+        view
+        returns (
+            uint256 liquidityTarget,
+            uint256 liquidityFunded,
+            uint256 liquidityProfitPool,
+            uint256 liquidityReturnedPrincipal,
+            bool liquiditySettled,
+            uint256 investorsCount,
+            uint256 progressBps
+        )
+    {
+        Round storage round = rounds[productId][roundId];
+        liquidityTarget = round.liquidityTarget;
+        liquidityFunded = round.liquidityFunded;
+        liquidityProfitPool = round.liquidityProfitPool;
+        liquidityReturnedPrincipal = round.liquidityReturnedPrincipal;
+        liquiditySettled = round.liquiditySettled;
+        investorsCount = roundInvestorList[productId][roundId].length;
+        progressBps = liquidityTarget == 0 ? 0 : (liquidityFunded * 10000) / liquidityTarget;
+    }
+
+    function getInvestorPosition(uint256 productId, uint256 roundId, address user)
+        external
+        view
+        returns (
+            uint256 principal,
+            uint256 estimatedProfit,
+            uint256 estimatedTotalReturn,
+            uint256 fundedProgressBps,
+            bool settled,
+            uint256 alreadyAccrued
+        )
+    {
+        Round storage round = rounds[productId][roundId];
+        principal = roundInvestorPrincipal[productId][roundId][user];
+        settled = round.liquiditySettled;
+        alreadyAccrued = roundInvestorReturned[productId][roundId][user];
+        fundedProgressBps = round.liquidityTarget == 0 ? 0 : (round.liquidityFunded * 10000) / round.liquidityTarget;
+
+        if (principal == 0 || round.liquidityFunded == 0) {
+            return (principal, 0, principal, fundedProgressBps, settled, alreadyAccrued);
+        }
+
+        estimatedProfit = (round.liquidityProfitPool * principal) / round.liquidityFunded;
+        estimatedTotalReturn = principal + estimatedProfit;
+    }
 
     function buySpecificTickets(
         uint256 productId,
         uint256[] calldata ticketNumbers,
         address referrerAddr
-    ) external nonReentrant whenNotPaused validProduct(productId) {
+    ) external nonReentrant whenNotPaused whenNotStopped validProduct(productId) {
         uint256 roundId = currentRound[productId];
         Round storage round = rounds[productId][roundId];
         NexumProduct memory product = products[productId];
@@ -304,19 +422,21 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
 
         stablecoin.safeTransferFrom(msg.sender, address(this), totalPriceStable);
 
+        uint256[] memory assigned = new uint256[](qty);
         for (uint256 i = 0; i < qty; i++) {
             uint256 t = ticketNumbers[i];
+            _removeFromAvailable(productId, roundId, t);
             ticketOwner[productId][roundId][t] = msg.sender;
             userTickets[productId][roundId][msg.sender].push(t);
+            assigned[i] = t;
         }
 
         round.ticketsSold += qty;
 
-        emit TicketsPurchased(productId, roundId, msg.sender, qty, ticketNumbers, totalPriceStable);
+        emit TicketsPurchased(productId, roundId, msg.sender, qty, assigned, totalPriceStable);
 
         _handleReferrer(msg.sender, referrerAddr);
         _splitFundsPerPurchase(productId, roundId, msg.sender, totalPriceStable);
-
         _safeDistributeOrAccrueNXL(msg.sender, product.nxlPerTicket * qty, productId);
 
         if (round.ticketsSold == product.maxTickets) {
@@ -324,61 +444,142 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         }
     }
 
-    function buyTickets(
-        uint256 productId,
-        uint256 quantity,
-        address referrerAddr
-    ) external nonReentrant whenNotPaused validProduct(productId) {
+    function buyTickets(uint256 productId, uint256 quantity, address referrerAddr)
+        external
+        nonReentrant
+        whenNotPaused
+        whenNotStopped
+        validProduct(productId)
+    {
+        console.log("buyTickets IN", productId, quantity, referrerAddr);
+
         require(quantity == 1 || quantity == 3 || quantity == 5 || quantity == 10, "Invalid qty");
 
         uint256 roundId = currentRound[productId];
         Round storage round = rounds[productId][roundId];
         NexumProduct memory product = products[productId];
 
+        console.log("roundId", roundId);
+        console.log("ticketsSold", round.ticketsSold, "maxTickets", product.maxTickets);
+
         require(!round.completed, "Round completed");
         require(round.ticketsSold + quantity <= product.maxTickets, "Not enough tickets");
 
+        console.log("before _requireSufficientNXLForRound");
         _requireSufficientNXLForRound(productId, roundId);
+        console.log("after _requireSufficientNXLForRound");
 
         uint256 totalPriceStable = _usdToStable(product.priceUSDE18 * quantity);
+        console.log("totalPriceStable", totalPriceStable);
         require(totalPriceStable > 0, "Price too small");
 
+        console.log("before safeTransferFrom");
         stablecoin.safeTransferFrom(msg.sender, address(this), totalPriceStable);
+        console.log("after safeTransferFrom");
 
         uint256[] memory assigned = new uint256[](quantity);
 
         for (uint256 i = 0; i < quantity; i++) {
-            uint256 t = _nextAvailableTicket(productId, roundId, product.maxTickets, round);
+            console.log("loop i", i);
+            uint256 t = _takeRandomTicket(productId, roundId, product.maxTickets, i);
             ticketOwner[productId][roundId][t] = msg.sender;
             userTickets[productId][roundId][msg.sender].push(t);
             assigned[i] = t;
             round.ticketsSold += 1;
+            console.log("assigned ticket", t, "ticketsSold now", round.ticketsSold);
         }
 
+        console.log("before emit TicketsPurchased");
         emit TicketsPurchased(productId, roundId, msg.sender, quantity, assigned, totalPriceStable);
 
+        console.log("before _handleReferrer");
         _handleReferrer(msg.sender, referrerAddr);
+        console.log("before _splitFundsPerPurchase");
         _splitFundsPerPurchase(productId, roundId, msg.sender, totalPriceStable);
+        console.log("after _splitFundsPerPurchase");
 
+        console.log("before _safeDistributeOrAccrueNXL");
         _safeDistributeOrAccrueNXL(msg.sender, product.nxlPerTicket * quantity, productId);
+        console.log("after _safeDistributeOrAccrueNXL");
 
         if (round.ticketsSold == product.maxTickets) {
+            console.log("before _requestRandomWinner");
             _requestRandomWinner(productId, roundId);
+            console.log("after _requestRandomWinner");
+        }
+
+        console.log("buyTickets OUT");
+    }
+
+    function _initRoundPool(uint256 productId, uint256 roundId, uint256 maxTickets) private {
+        uint256[] storage pool = availableTickets[productId][roundId];
+        if (pool.length == 0) {
+            for (uint256 i = 0; i < maxTickets; i++) {
+                pool.push(i);
+                ticketIndexInAvailable[productId][roundId][i] = i;
+            }
         }
     }
 
-    function _nextAvailableTicket(
+    function _takeRandomTicket(
         uint256 productId,
         uint256 roundId,
         uint256 maxTickets,
-        Round storage round
+        uint256 salt
     ) private returns (uint256) {
-        for (uint256 k = 0; k < maxTickets; k++) {
-            uint256 idx = round.nextTicketCursor % maxTickets;
-            round.nextTicketCursor = idx + 1;
-            if (ticketOwner[productId][roundId][idx] == address(0)) return idx;
+        _initRoundPool(productId, roundId, maxTickets);
+
+        uint256[] storage pool = availableTickets[productId][roundId];
+        require(pool.length > 0, "No tickets left");
+
+        uint256 idx = _randomIndex(pool.length, salt);
+        uint256 ticketId = pool[idx];
+        _swapAndPop(pool, productId, roundId, ticketId);
+        return ticketId;
+    }
+
+    function _removeFromAvailable(uint256 productId, uint256 roundId, uint256 ticketId) private {
+        uint256[] storage pool = availableTickets[productId][roundId];
+        if (pool.length == 0) return;
+
+        uint256 idx = ticketIndexInAvailable[productId][roundId][ticketId];
+        if (idx >= pool.length || pool[idx] != ticketId) return;
+
+        _swapAndPop(pool, productId, roundId, ticketId);
+    }
+
+    function _swapAndPop(
+        uint256[] storage pool,
+        uint256 productId,
+        uint256 roundId,
+        uint256 ticketId
+    ) private {
+        uint256 lastIndex = pool.length - 1;
+        uint256 idx = ticketIndexInAvailable[productId][roundId][ticketId];
+
+        if (idx != lastIndex) {
+            uint256 lastTicket = pool[lastIndex];
+            pool[idx] = lastTicket;
+            ticketIndexInAvailable[productId][roundId][lastTicket] = idx;
         }
-        revert("No tickets left");
+
+        pool.pop();
+        delete ticketIndexInAvailable[productId][roundId][ticketId];
+    }
+
+    function _randomIndex(uint256 poolLength, uint256 salt) internal view returns (uint256) {
+        uint256 rand = uint256(
+            keccak256(
+                abi.encodePacked(
+                    block.timestamp,
+                    block.prevrandao,
+                    msg.sender,
+                    poolLength,
+                    salt
+                )
+            )
+        );
+        return rand % poolLength;
     }
 
     function _requireSufficientNXLForRound(uint256 productId, uint256 roundId) private view {
@@ -392,7 +593,25 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         require(available >= needed, "Insufficient NXL for round");
     }
 
-    // ========= Referrals & split =========
+    function _checkAndMaybeStopAndBurn() private {
+        if (globalStopped) return;
+
+        for (uint256 i = 0; i < PRODUCT_COUNT; i++) {
+            if (products[i].active) {
+                return;
+            }
+        }
+
+        uint256 available = nxlToken.getAvailableRewards();
+        if (available > 0) {
+            try nxlToken.burnUndistributed(available) {
+            } catch {
+            }
+            emit GlobalStoppedAndNXLBurned(available);
+        }
+
+        globalStopped = true;
+    }
 
     function _handleReferrer(address buyer, address referrerAddr) private {
         if (referralNetwork == address(0)) return;
@@ -415,18 +634,28 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
 
         stablecoin.safeTransfer(founder, (totalStable * PCT_FOUNDER) / 10000);
 
+        uint256 investorShare = (totalStable * PCT_INVESTOR) / 10000;
+        round.liquidityProfitPool += investorShare;
+
         if (treasuryBTC != address(0)) {
             uint256 tAmt = (totalStable * PCT_TREASURY_BTC) / 10000;
-            stablecoin.safeTransfer(treasuryBTC, tAmt);
-
-            try ITreasuryBTCNotify(treasuryBTC).onFundsReceived(tAmt) {
-            } catch {}
+            try this._safeTransferOut(treasuryBTC, tAmt) {
+                try ITreasuryBTCNotify(treasuryBTC).onFundsReceived(tAmt) {
+                } catch {
+                }
+            } catch {
+                round.prizePot += tAmt;
+            }
         } else {
             round.prizePot += (totalStable * PCT_TREASURY_BTC) / 10000;
         }
 
         if (ambassadorRegistry != address(0)) {
-            stablecoin.safeTransfer(ambassadorRegistry, (totalStable * PCT_AMBASSADORS) / 10000);
+            uint256 aAmt = (totalStable * PCT_AMBASSADORS) / 10000;
+            try this._safeTransferOut(ambassadorRegistry, aAmt) {
+            } catch {
+                round.prizePot += aAmt;
+            }
         } else {
             round.prizePot += (totalStable * PCT_AMBASSADORS) / 10000;
         }
@@ -443,16 +672,29 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         uint256 toPay = 0;
 
         if (referralNetwork != address(0)) {
-            (address l1, address l2, address l3) = IReferralNetwork(referralNetwork).getReferralChain(buyer);
+            try IReferralNetwork(referralNetwork).getReferralChain(buyer) returns (
+                address l1,
+                address l2,
+                address l3
+            ) {
+                if (l1 != address(0)) toPay += (referralBudget * 500) / 1000;
+                if (l2 != address(0)) toPay += (referralBudget * 300) / 1000;
+                if (l3 != address(0)) toPay += (referralBudget * 200) / 1000;
 
-            if (l1 != address(0)) toPay += (referralBudget * 500) / 1000;
-            if (l2 != address(0)) toPay += (referralBudget * 300) / 1000;
-            if (l3 != address(0)) toPay += (referralBudget * 200) / 1000;
-
-            if (toPay > 0) {
-                stablecoin.safeTransfer(referralNetwork, toPay);
-                // distribuir SOLO lo financiado
-                IReferralNetwork(referralNetwork).distributeCommissions(buyer, toPay);
+                if (toPay > 0) {
+                    try this._safeTransferOut(referralNetwork, toPay) {
+                        try IReferralNetwork(referralNetwork).distributeCommissions(buyer, toPay) {
+                        } catch {
+                            round.prizePot += toPay;
+                            toPay = 0;
+                        }
+                    } catch {
+                        round.prizePot += toPay;
+                        toPay = 0;
+                    }
+                }
+            } catch {
+                toPay = 0;
             }
         }
 
@@ -460,7 +702,11 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         if (leftover > 0) round.prizePot += leftover;
     }
 
-    // ========= Audit withdrawal (pull) =========
+    function _safeTransferOut(address to, uint256 amount) external {
+        require(msg.sender == address(this), "Only self");
+        if (amount == 0) return;
+        stablecoin.safeTransfer(to, amount);
+    }
 
     function withdrawAuditFunds() external nonReentrant {
         require(msg.sender == auditFunds, "Not authorized");
@@ -470,8 +716,6 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         stablecoin.safeTransfer(msg.sender, amount);
         emit AuditFundsWithdrawn(msg.sender, amount);
     }
-
-    // ========= VRF =========
 
     function _requestRandomWinner(uint256 productId, uint256 roundId) private {
         Round storage round = rounds[productId][roundId];
@@ -562,7 +806,64 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         _startNewRound(productId);
     }
 
-    // ======= Settlement (accruals only) =======
+    function _settleRoundLiquidity(uint256 productId, uint256 roundId) private {
+        Round storage round = rounds[productId][roundId];
+        if (round.liquiditySettled) return;
+        round.liquiditySettled = true;
+
+        uint256 totalPrincipal = round.liquidityFunded;
+        uint256 totalProfit = round.liquidityProfitPool;
+        address[] storage investors = roundInvestorList[productId][roundId];
+
+        if (totalPrincipal == 0 || investors.length == 0) {
+            if (totalProfit > 0) {
+                _accrueStable(founder, totalProfit);
+            }
+
+            emit RoundLiquiditySettled(productId, roundId, totalPrincipal, totalProfit);
+            return;
+        }
+
+        uint256 remainingPrincipal = totalPrincipal;
+        uint256 remainingProfit = totalProfit;
+
+        for (uint256 i = 0; i < investors.length; i++) {
+            address inv = investors[i];
+            uint256 principal = roundInvestorPrincipal[productId][roundId][inv];
+            if (principal == 0) continue;
+
+            uint256 profit;
+            if (i == investors.length - 1) {
+                profit = remainingProfit;
+            } else {
+                profit = (totalProfit * principal) / totalPrincipal;
+                if (profit > remainingProfit) profit = remainingProfit;
+            }
+
+            uint256 principalReturn;
+            if (i == investors.length - 1) {
+                principalReturn = remainingPrincipal;
+            } else {
+                principalReturn = principal;
+                if (principalReturn > remainingPrincipal) principalReturn = remainingPrincipal;
+            }
+
+            uint256 totalReturn = principalReturn + profit;
+            roundInvestorReturned[productId][roundId][inv] += totalReturn;
+            round.liquidityReturnedPrincipal += principalReturn;
+            _accrueStable(inv, totalReturn);
+
+            if (remainingPrincipal >= principalReturn) remainingPrincipal -= principalReturn;
+            else remainingPrincipal = 0;
+
+            if (remainingProfit >= profit) remainingProfit -= profit;
+            else remainingProfit = 0;
+
+            emit RoundInvestorAccrued(productId, roundId, inv, principalReturn, profit, totalReturn);
+        }
+
+        emit RoundLiquiditySettled(productId, roundId, totalPrincipal, totalProfit);
+    }
 
     function _settleRoundToClaims(
         uint256 productId,
@@ -582,6 +883,9 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
             stablecoin.safeTransfer(feesReceiver, round.instantPot - paidInstant);
         }
 
+        emit InstantRewardsDistributed(productId, roundId, paidInstant);
+
+        _settleRoundLiquidity(productId, roundId);
         _safeDistributeOrAccrueNXL(winner, product.nxlWinnerBonus, productId);
     }
 
@@ -635,6 +939,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         if (products[productId].active) {
             products[productId].active = false;
             emit NXLRewardsExhausted(productId);
+            _checkAndMaybeStopAndBurn();
         }
     }
 
@@ -656,8 +961,8 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
 
         uint256 c1 = 41 * factor;
         uint256 c2 = 10 * factor;
-        uint256 c3 = 5  * factor;
-        uint256 c4 = 6  * factor;
+        uint256 c3 = 5 * factor;
+        uint256 c4 = 6 * factor;
         uint256 totalWinners = c1 + c2 + c3 + c4;
 
         uint256 p1 = _usdToStable(product.priceUSDE18 * 1);
@@ -675,7 +980,6 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
 
         uint256 idx = offset;
         uint256 winnersFound = 0;
-
         uint256 maxIters = tickets + totalWinners;
 
         for (uint256 i = 0; i < maxIters && winnersFound < totalWinners; i++) {
@@ -729,11 +1033,12 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         uint256 newRoundId = currentRound[productId] + 1;
         currentRound[productId] = newRoundId;
 
+        uint256 liquidityTarget = _instantExpectedForProduct(productId);
+
         rounds[productId][newRoundId] = Round({
             productId: productId,
             roundId: newRoundId,
             ticketsSold: 0,
-            nextTicketCursor: 0,
             completed: false,
             vrfRequested: false,
             vrfRequestId: 0,
@@ -741,26 +1046,35 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
             winner: address(0),
             winningTicket: 0,
             prizePot: 0,
-            instantPot: 0
+            instantPot: 0,
+            liquidityTarget: liquidityTarget,
+            liquidityFunded: 0,
+            liquidityProfitPool: 0,
+            liquidityReturnedPrincipal: 0,
+            liquiditySettled: false
         });
 
         emit NewRoundStarted(productId, newRoundId, block.timestamp);
     }
 
-    // admin (while owner exists)
     function reactivateProduct(uint256 productId) external onlyOwner {
         require(productId < PRODUCT_COUNT, "Invalid product");
         require(!products[productId].active, "Already active");
+        require(!globalStopped, "Nexum stopped");
         products[productId].active = true;
         emit ProductReactivated(productId);
     }
 
-    function emergencyPause() external onlyOwner { paused = true; }
-    function emergencyUnpause() external onlyOwner { paused = false; }
+    function emergencyPause() external onlyOwner {
+        paused = true;
+    }
+
+    function emergencyUnpause() external onlyOwner {
+        paused = false;
+    }
 
     function setCallbackGasLimit(uint32 _gasLimit) external onlyOwner {
         require(_gasLimit >= 100000 && _gasLimit <= 500000, "Invalid gas limit");
         callbackGasLimit = _gasLimit;
     }
 }
-

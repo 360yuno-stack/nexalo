@@ -26,9 +26,7 @@ interface INexaloStakingWBTC {
  * TreasuryBTC:
  * - Recibe stable, strategies Aave/Venus y ventana anual redeem NXL->USDT
  * - Rewards mensuales WBTC holders NXL (snapshot + claim)
- * - FIX H-04: usa circulatingSupplyAtSnapshot (no totalSupplyAt)
- * - Best-effort claim: nunca revierte por falta de WBTC (evita DoS a holders)
- * - Permite fundear staking sin tocar WBTC reservado de holders
+ * - Best-effort claim en WBTC
  */
 contract TreasuryBTC is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
@@ -50,11 +48,12 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
     IYieldStrategy public activeStrategy;
 
     uint256 public immutable redeemWindowStart;
-    uint256 public immutable redeemWindowPeriod;
-    uint256 public immutable redeemWindowDuration;
+    uint256 public immutable redeemWindowPeriod;   // 365 days fijo
+    uint256 public immutable redeemWindowDuration; // 7 days en despliegue mainnet
 
+    // AHORA público para frontend
     uint256 public lastOpenedYear;
-    bool private lastOpenedYearInit;
+    bool public lastOpenedYearInit;
 
     bool public windowOpen;
     uint256 public windowCloseTime;
@@ -125,7 +124,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
         address _nexumManager,
         address _wbtc,
         uint256 _redeemWindowStart,
-        uint256 _redeemWindowDuration
+        uint256 _redeemWindowDuration   // aquí pasarás 7 days en mainnet
     ) Ownable(msg.sender) {
         require(_stablecoin != address(0), "Invalid stablecoin");
         require(_nxlToken != address(0), "Invalid NXL");
@@ -257,7 +256,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
         return 0;
     }
 
-    function openRedeemWindow() external nonReentrant {
+    function openRedeemWindow() external nonReentrant onlyOwner {
         require(block.timestamp >= redeemWindowStart, "Not started");
         require(!windowOpen, "Already open");
 
@@ -306,7 +305,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
         emit Redeemed(msg.sender, nxlAmount, usdtOut);
     }
 
-    function closeRedeemWindow() external nonReentrant {
+    function closeRedeemWindow() external nonReentrant onlyOwner {
         require(windowOpen, "Not open");
         require(block.timestamp > windowCloseTime, "Not expired");
         windowOpen = false;
@@ -421,7 +420,6 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
         uint256 bal = wbtc.balanceOf(address(this));
         require(bal >= reservedWBTC + amount, "Not enough unreserved WBTC");
 
-        // OZ5: no safeApprove, usar forceApprove
         wbtc.forceApprove(address(staking), 0);
         wbtc.forceApprove(address(staking), amount);
 

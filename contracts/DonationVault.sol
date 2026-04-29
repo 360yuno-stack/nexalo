@@ -75,5 +75,5 @@ contract DonationVault is Ownable, ReentrancyGuard {
         IERC20(token).safeTransfer(owner(), amount);
     }
 
-    // Views (igual que antes si quieres; no afectan auditoría)
+    // Views 
 }
