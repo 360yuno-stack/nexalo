@@ -23,8 +23,9 @@ const ABIS = {
 
   // NEXUM MANAGER ABI (funciones principales)
   NEXUM_MANAGER: [
-    // FUNCIÓN DE COMPRA
+    // FUNCIONES DE COMPRA
     "function buyTickets(uint256 productId, uint256 quantity, address referrer) payable",
+    "function buySpecificTickets(uint256 productId, uint256[] ticketNumbers, address referrerAddr)",
 
     // VISTAS DE PRODUCTOS
     "function products(uint256) view returns (string name, uint256 priceUSD, uint256 maxTickets, uint256 nxlPerTicket, uint256 nxlWinnerBonus, uint256 jackpotUSD, bool active)",
