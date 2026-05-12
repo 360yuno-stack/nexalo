@@ -65,15 +65,30 @@ contract DonationVault is Ownable, ReentrancyGuard {
         emit DonationsForwarded(treasuryBTC, amount);
     }
 
-    function updateTreasury(address newTreasury) external onlyOwner {
+    /// @notice L-03 FIX: 2-day timelock before treasury update takes effect.
+    address public pendingTreasury;
+    uint256 public pendingTreasuryAvailableAt;
+    uint256 public constant TREASURY_TIMELOCK = 2 days;
+
+    event TreasuryUpdateProposed(address indexed newTreasury, uint256 availableAt);
+    event TreasuryUpdated(address indexed newTreasury);
+
+    function proposeTreasuryUpdate(address newTreasury) external onlyOwner {
         require(newTreasury != address(0), "Invalid treasury");
+        pendingTreasury = newTreasury;
+        pendingTreasuryAvailableAt = block.timestamp + TREASURY_TIMELOCK;
+        emit TreasuryUpdateProposed(newTreasury, pendingTreasuryAvailableAt);
+    }
+
+    function executeTreasuryUpdate() external onlyOwner {
+        require(pendingTreasury != address(0), "No pending update");
+        require(block.timestamp >= pendingTreasuryAvailableAt, "Timelock not elapsed");
+        address newTreasury = pendingTreasury;
+        pendingTreasury = address(0);
+        pendingTreasuryAvailableAt = 0;
         treasuryBTC = newTreasury;
+        emit TreasuryUpdated(newTreasury);
     }
 
-    function recoverTokens(address token, uint256 amount) external onlyOwner {
-        require(token != address(stablecoin), "Cannot recover stablecoin");
-        IERC20(token).safeTransfer(owner(), amount);
-    }
-
-    // Views 
+    // Views
 }

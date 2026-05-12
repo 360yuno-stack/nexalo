@@ -12,7 +12,8 @@ async function deployMocks() {
     buyer,
     investor1,
     investor2,
-    other
+    other,
+    guardian
   ] = await ethers.getSigners();
 
   const StableMock = await ethers.getContractFactory("MockERC20");
@@ -43,7 +44,8 @@ async function deployMocks() {
       buyer,
       investor1,
       investor2,
-      other
+      other,
+      guardian
     },
     stable,
     nxl,
@@ -68,7 +70,8 @@ async function deployManager(fixtures) {
     signers.partner.address,
     signers.feesReceiver.address,
     signers.operationsService.address,
-    signers.auditFunds.address
+    signers.auditFunds.address,
+    signers.guardian.address
   );
 
   await vrf.addConsumer(subId, await manager.getAddress());

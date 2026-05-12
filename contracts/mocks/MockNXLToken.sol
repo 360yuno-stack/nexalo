@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 contract MockNXLToken {
-    uint256 public availableRewards;
+    uint256 public availableRewards = 100_000_000 * 1e18; // Start with 100M to avoid globalStopped on deploy
     address public treasuryBTC;
 
     function setAvailableRewards(uint256 amount) external {

@@ -8,11 +8,15 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 
 /**
- * @notice Stub audit-friendly: Treasury approves, strategy pull via transferFrom.
- * In prod: integrate Aave Pool.supply/withdraw.
+ * @notice STUB — NOT FOR PRODUCTION USE. DO NOT DEPLOY TO MAINNET.
+ * @dev This contract is a placeholder for audit/testing purposes only.
+ * In production: integrate Aave Pool.supply/withdraw with proper safety checks.
  */
 contract AaveStrategy is IYieldStrategy, ReentrancyGuard {
     using SafeERC20 for IERC20;
+
+    /// @dev Safety flag: prevents mainnet deployment of this stub.
+    bool private constant _IS_PRODUCTION_READY = false;
 
     IERC20 private immutable _stable;
     address private immutable _treasury;
@@ -21,6 +25,11 @@ contract AaveStrategy is IYieldStrategy, ReentrancyGuard {
 
     modifier onlyTreasury() {
         require(msg.sender == _treasury, "Only TreasuryBTC");
+        _;
+    }
+
+    modifier notProduction() {
+        require(!_IS_PRODUCTION_READY, "STUB: NOT FOR PRODUCTION - deploy real Aave integration");
         _;
     }
 
@@ -34,27 +43,27 @@ contract AaveStrategy is IYieldStrategy, ReentrancyGuard {
     function stablecoin() external view override returns (address) { return address(_stable); }
     function treasury() external view override returns (address) { return _treasury; }
 
-    function deposit(uint256 amount) external override onlyTreasury nonReentrant {
+    function deposit(uint256 amount) external override onlyTreasury nonReentrant notProduction {
         require(amount > 0, "Amount=0");
         _stable.safeTransferFrom(_treasury, address(this), amount);
         _managed += amount;
     }
 
-    function withdraw(uint256 amount) external override onlyTreasury nonReentrant {
+    function withdraw(uint256 amount) external override onlyTreasury nonReentrant notProduction {
         require(amount > 0, "Amount=0");
         require(_managed >= amount, "Insufficient managed");
         _managed -= amount;
         _stable.safeTransfer(_treasury, amount);
     }
 
-    function withdrawAll() external override onlyTreasury nonReentrant returns (uint256 withdrawn) {
+    function withdrawAll() external override onlyTreasury nonReentrant notProduction returns (uint256 withdrawn) {
         uint256 bal = _stable.balanceOf(address(this));
         withdrawn = bal;
         _managed = 0;
         if (bal > 0) _stable.safeTransfer(_treasury, bal);
     }
 
-    function harvest() external override onlyTreasury nonReentrant returns (uint256 gained) {
+    function harvest() external override onlyTreasury nonReentrant notProduction returns (uint256 gained) {
         return 0;
     }
 

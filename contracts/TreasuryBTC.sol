@@ -60,6 +60,10 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
     uint256 public redeemRateE18;
     uint256 public nxlBurnedThisWindow;
 
+    // FIX 3: Snapshot-based redemption limits
+    uint256 public windowSnapshotId;
+    mapping(address => uint256) public redeemedInWindow;
+
     address public auditFunds;
     bool public auditFundsLocked;
 
@@ -268,13 +272,18 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
             require(yearIndex != lastOpenedYear, "Already opened this year");
         }
 
-        uint256 usdtBal = stablecoin.balanceOf(address(this));
-        require(usdtBal > 0, "No USDT liquidity");
+        // FIX 8: Use totalAssets() (balance + strategy) instead of just balanceOf
+        uint256 totalAssetsVal = this.totalAssets();
+        require(totalAssetsVal > 0, "No USDT liquidity");
 
         uint256 circ = _circulatingSupply();
         require(circ > 0, "No circulating supply");
 
-        redeemRateE18 = (usdtBal * 1e18) / circ;
+        // FIX 3: Snapshot balances at window open to prevent flash-loan manipulation
+        windowSnapshotId = nxlToken.snapshot();
+
+        // FIX 8: Rate based on totalAssets (includes strategy deposits)
+        redeemRateE18 = (totalAssetsVal * 1e18) / circ;
 
         windowOpen = true;
         windowCloseTime = block.timestamp + redeemWindowDuration;
@@ -289,15 +298,23 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
         require(block.timestamp <= windowCloseTime, "Window expired");
         require(nxlAmount > 0, "Amount=0");
 
+        // FIX 3: Limit redemption to snapshot balance at window open
+        uint256 snapshotBalance = nxlToken.balanceOfAt(msg.sender, windowSnapshotId);
+        uint256 alreadyRedeemed = redeemedInWindow[msg.sender];
+        require(alreadyRedeemed + nxlAmount <= snapshotBalance, "Exceeds snapshot balance");
+
         uint256 usdtOut = (nxlAmount * redeemRateE18) / 1e18;
         require(usdtOut > 0, "Too small");
         require(stablecoin.balanceOf(address(this)) >= usdtOut, "Insufficient USDT");
 
-        IERC20(address(nxlToken)).safeTransferFrom(msg.sender, address(this), nxlAmount);
-        nxlToken.burn(nxlAmount);
-
+        // Effects before interactions (CEI pattern)
+        redeemedInWindow[msg.sender] = alreadyRedeemed + nxlAmount;
         nxlBurnedThisWindow += nxlAmount;
         totalRedeemed += usdtOut;
+
+        // Interactions
+        IERC20(address(nxlToken)).safeTransferFrom(msg.sender, address(this), nxlAmount);
+        nxlToken.burn(nxlAmount);
 
         stablecoin.safeTransfer(msg.sender, usdtOut);
         _syncBalance();

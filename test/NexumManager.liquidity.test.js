@@ -11,14 +11,15 @@ async function deployMocks() {
     auditFunds,
     buyer,
     investor,
-    other
+    other,
+    guardian
   ] = await ethers.getSigners();
 
   const StableMock = await ethers.getContractFactory("StableMock");
   const NXLMock = await ethers.getContractFactory("NXLMock");
   const ReferralMock = await ethers.getContractFactory("ReferralMock");
   const TreasuryMock = await ethers.getContractFactory("TreasuryMock");
-  const MockVRFCoordinator = await ethers.getContractFactory("MockVRFCoordinator");
+  const MockVRFCoordinator = await ethers.getContractFactory("contracts/TestMocks.sol:MockVRFCoordinator");
 
   const stable = await StableMock.deploy();
   const nxl = await NXLMock.deploy();
@@ -36,7 +37,8 @@ async function deployMocks() {
       auditFunds,
       buyer,
       investor,
-      other
+      other,
+      guardian
     },
     stable,
     nxl,
@@ -60,7 +62,8 @@ async function deployManager(fixtures) {
     signers.partner.address,
     signers.feesReceiver.address,
     signers.operationsService.address,
-    signers.auditFunds.address
+    signers.auditFunds.address,
+    signers.guardian.address
   );
 
   await manager.setEcosystemAddresses(

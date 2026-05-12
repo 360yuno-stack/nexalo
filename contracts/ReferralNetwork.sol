@@ -49,7 +49,13 @@ contract ReferralNetwork is Ownable, ReentrancyGuard {
         require(referrer != address(0), "Invalid referrer");
         require(referrer != user, "Self ref");
         require(referrerOf[user] == address(0), "Already has referrer");
-        require(referrerOf[referrer] != user, "Loop");
+        // Anti-loop: verificar que user no sea ancestor de referrer (hasta 3 niveles)
+        address check = referrer;
+        for (uint256 i = 0; i < 3; i++) {
+            check = referrerOf[check];
+            if (check == address(0)) break;
+            require(check != user, "Circular ref");
+        }
         referrerOf[user] = referrer;
         emit ReferrerSet(user, referrer);
     }
@@ -64,6 +70,9 @@ contract ReferralNetwork is Ownable, ReentrancyGuard {
         require(buyer != address(0), "Invalid buyer");
         require(referralBudget > 0, "Budget=0");
 
+        // M-03 FIX: Verify balance BEFORE accruing to any referrer (CEI pattern)
+        require(stablecoin.balanceOf(address(this)) >= referralBudget, "Insufficient referral funds");
+
         address l1 = referrerOf[buyer];
         address l2 = l1 == address(0) ? address(0) : referrerOf[l1];
         address l3 = l2 == address(0) ? address(0) : referrerOf[l2];
@@ -73,7 +82,6 @@ contract ReferralNetwork is Ownable, ReentrancyGuard {
         if (l2 != address(0)) { uint256 a2 = (referralBudget * 300) / 1000; claimable[l2] += a2; paidTotal += a2; }
         if (l3 != address(0)) { uint256 a3 = (referralBudget * 200) / 1000; claimable[l3] += a3; paidTotal += a3; }
 
-        require(stablecoin.balanceOf(address(this)) >= paidTotal, "Insufficient funds");
         emit CommissionsAccrued(buyer, referralBudget, l1, l2, l3, paidTotal);
     }
 

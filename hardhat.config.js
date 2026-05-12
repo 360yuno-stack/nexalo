@@ -17,8 +17,15 @@ module.exports = {
   networks: {
     hardhat: {
       chainId: 31337,
-      blockGasLimit: 150_000_000,
-      gas: 15_000_000,
+      blockGasLimit: 30_000_000,
+      gasPrice: "auto",
+      allowUnlimitedContractSize: true,
+      throwOnCallFailures: true,
+      throwOnTransactionFailures: true,
+      mining: {
+        auto: true,
+        interval: 0
+      }
     },
     bscTestnet: {
       url:

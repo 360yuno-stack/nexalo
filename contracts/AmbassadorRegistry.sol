@@ -7,9 +7,20 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
- * 5% ambassadors: pull payments, distributeFunds permissionless (delta balance).
- * Fix M-02: no push, no revert por blacklist.
- * BLINDA: no perder rewards al desactivar / reactivar.
+ * @title AmbassadorRegistry
+ * @notice Gestiona el programa de embajadores de NEXALO.
+ * @dev El 5% de cada compra de tickets se distribuye entre embajadores activos
+ *      usando un modelo acum-per-active (pull payments).
+ *
+ *  Flujo:
+ *   1. Owner aprueba un embajador con `approveAmbassador(addr, name)`.
+ *   2. NexumManager transfiere fondos al contrato.
+ *   3. Cualquiera llama `distributeFunds()` para actualizar accRewardPerActive.
+ *   4. Embajadores llaman `claim()` para retirar sus recompensas.
+ *
+ *  Seguridad:
+ *   - Pull payments (sin push): no puede bloquearse por blacklist.
+ *   - Las rewards se cristalizan al desactivar un embajador (no se pierden).
  */
 contract AmbassadorRegistry is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -41,7 +52,27 @@ contract AmbassadorRegistry is Ownable, ReentrancyGuard {
         lastBalance = stablecoin.balanceOf(address(this));
     }
 
+    // ── Owner-gated registration ──────────────────────────────────────────
+
+    /// @notice Registra (o auto-registra con aprobación previa) un embajador.
+    /// @dev El owner puede pre-aprobar direcciones; la dirección aprobada luego
+    ///      confirma su registro llamando a este método.
+    mapping(address => bool) public approvedForRegistration;
+
+    /// @notice Aprueba una dirección para que pueda registrarse como embajador.
+    function approveForRegistration(address candidate) external onlyOwner {
+        require(candidate != address(0), "Invalid address");
+        approvedForRegistration[candidate] = true;
+    }
+
+    /// @notice Revoca la aprobación (antes de que el candidato se registre).
+    function revokeApproval(address candidate) external onlyOwner {
+        approvedForRegistration[candidate] = false;
+    }
+
+    /// @notice El candidato aprobado se registra como embajador activo.
     function selfRegister(string calldata name) external {
+        require(approvedForRegistration[msg.sender], "Not approved");
         require(bytes(name).length > 0 && bytes(name).length <= 64, "Invalid name");
         Ambassador storage a = ambassadors[msg.sender];
         require(bytes(a.name).length == 0, "Already registered");
@@ -54,6 +85,7 @@ contract AmbassadorRegistry is Ownable, ReentrancyGuard {
             name: name
         });
 
+        approvedForRegistration[msg.sender] = false; // consume la aprobación
         activeCount += 1;
         emit AmbassadorRegistered(msg.sender, name);
     }
@@ -91,9 +123,13 @@ contract AmbassadorRegistry is Ownable, ReentrancyGuard {
         emit FundsDistributed(delta, activeCount, accRewardPerActiveE18);
     }
 
+    /// @notice Calcula las recompensas pendientes (no cristalizadas) de un embajador activo.
+    /// @dev Mantiene la precisión E18 hasta el momento del pago para evitar truncamiento prematuro.
     function _pendingOnly(Ambassador memory a) private view returns (uint256) {
         if (bytes(a.name).length == 0) return 0;
+        if (!a.active) return 0; // inactivos no acumulan nuevas rewards
         if (accRewardPerActiveE18 <= a.rewardDebtE18) return 0;
+        // Mantener precisión E18: dividir solo al momento del pago
         return (accRewardPerActiveE18 - a.rewardDebtE18) / 1e18;
     }
 

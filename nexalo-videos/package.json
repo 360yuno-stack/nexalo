@@ -1,0 +1,16 @@
+{
+  "name": "nexalo-videos",
+  "version": "1.0.0",
+  "description": "NEXALO Tutorial Videos — Powered by Remotion",
+  "scripts": {
+    "dev": "npx remotion studio",
+    "build": "npx remotion render",
+    "render:all": "node render-all.js"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.460",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.460"
+  }
+}

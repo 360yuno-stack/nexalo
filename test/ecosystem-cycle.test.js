@@ -13,7 +13,7 @@ describe("NEXALO - Ecosystem full cycle (Nexum + Treasury + Referral + Staking)"
   }
 
   it("Deploys and runs a complete cycle (NO VRF, uses resolveStuckRound)", async function () {
-    const [deployer, founder, partner, fees, ops, audit, buyerA, buyerB, buyerC, ref1, ref2] =
+    const [deployer, founder, partner, fees, ops, audit, buyerA, buyerB, buyerC, ref1, ref2, guardian] =
       await ethers.getSigners();
 
     // 1) Mocks
@@ -32,7 +32,7 @@ describe("NEXALO - Ecosystem full cycle (Nexum + Treasury + Referral + Staking)"
     await (await usdt.mint(buyerC.address, oneUSDT * 300000n)).wait();
     await (await usdt.mint(ref1.address,  oneUSDT * 300000n)).wait();
 
-    // 2) NXL
+    // 2) NXL — deploy with 2 args, then setNexumManager after manager is deployed
     const NXLToken = await ethers.getContractFactory("NXLToken");
     const nxl = await NXLToken.deploy(founder.address, partner.address);
     await nxl.waitForDeployment();
@@ -84,16 +84,16 @@ describe("NEXALO - Ecosystem full cycle (Nexum + Treasury + Referral + Staking)"
       partner.address,
       fees.address,
       ops.address,
-      audit.address
+      audit.address,
+      guardian.address
     );
     await manager.waitForDeployment();
 
     const managerAddr = await manager.getAddress();
 
-    // Add consumer
+    // Add consumer to VRF
     await (await vrf.addConsumer(subId, managerAddr)).wait();
-
-    // Set manager in NXL + Referral
+    // Set NXL manager (one-time setter)
     await (await nxl.setNexumManager(managerAddr)).wait();
     await (await referral.setNexumManager(managerAddr)).wait();
 
@@ -120,6 +120,9 @@ describe("NEXALO - Ecosystem full cycle (Nexum + Treasury + Referral + Staking)"
     // IMPORTANT: configure NXL treasury BEFORE autonomy (owner still exists)
     await (await manager.configureNXLTokenTreasury(await treasury.getAddress())).wait();
 
+    // IMPORTANT: approve ambassadors before selfRegister (requires owner approval)
+    await (await ambassadors.approveForRegistration(buyerA.address)).wait();
+    await (await ambassadors.approveForRegistration(buyerB.address)).wait();
     await (await ambassadors.connect(buyerA).selfRegister("A")).wait();
     await (await ambassadors.connect(buyerB).selfRegister("B")).wait();
 
@@ -160,7 +163,21 @@ describe("NEXALO - Ecosystem full cycle (Nexum + Treasury + Referral + Staking)"
 
     // 9) NO VRF fulfill: force stuck resolution
     await mine(8 * 24 * 3600); // > VRF_TIMEOUT (7 days)
-    await (await manager.resolveStuckRound(PRODUCT_ID, roundId)).wait();
+    const resolveTx = await manager.resolveStuckRound(PRODUCT_ID, roundId);
+    const resolveReceipt = await resolveTx.wait();
+
+    // resolveStuckRound re-issues VRF — find new requestId from event
+    let newRequestId;
+    for (const log of resolveReceipt.logs) {
+      try {
+        const parsed = manager.interface.parseLog(log);
+        if (parsed?.name === "StuckRoundResolved") { newRequestId = parsed.args[2]; break; }
+      } catch (e) {}
+    }
+    if (!newRequestId) throw new Error("StuckRoundResolved event not found");
+
+    // Fulfill the new VRF to complete the round
+    await (await vrf.fulfillRandomWordsWithOverride(newRequestId, managerAddr, [42n])).wait();
 
     const rDone = await manager.rounds(PRODUCT_ID, roundId);
     expect(rDone.completed).to.equal(true);

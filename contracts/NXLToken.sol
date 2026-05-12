@@ -5,23 +5,23 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
 
 /**
- * NXLToken (OZ 5.4 compatible)
- * - Supply: 100M
- *   - 96M rewards (held by contract)
- *   - 3M founder vesting 2y
- *   - 1M partner vesting 1y
+ * @title NXLToken
+ * @notice Token de gobernanza y recompensas del ecosistema NEXALO.
+ * @dev Supply total: 100M NXL.
+ *   - 96M reservados como rewards (mantenidos por el contrato).
+ *   - 3M para founder con vesting de 2 años.
+ *   - 1M para partner con vesting de 1 año.
  *
- * Autonomía:
- * - No Ownable
- * - NexumManager se setea una sola vez.
- * - TreasuryBTC se setea una sola vez (por NexumManager).
+ * Diseñado para autonomía total:
+ *  - Sin Ownable. NexumManager se configura una sola vez.
+ *  - TreasuryBTC se configura una sola vez (vía NexumManager).
  *
- * Snapshot "lite" (para TreasuryBTC holders rewards):
- * - snapshot() (solo TreasuryBTC)
- * - balanceOfAt(account, snapshotId)
- * - totalSupplyAt(snapshotId)
+ * Snapshot lite (para rewards a holders NXL en TreasuryBTC):
+ *  - snapshot() — solo llamable por TreasuryBTC.
+ *  - balanceOfAt(account, snapshotId)
+ *  - totalSupplyAt(snapshotId)
  *
- * Implementado con checkpoints por blockNumber para OZ 5.x
+ * NOTA: Checkpoints usan uint48 para block.number (safe hasta ~year 2^48 bloques).
  */
 contract NXLToken is ERC20 {
     using Checkpoints for Checkpoints.Trace208;
@@ -37,7 +37,6 @@ contract NXLToken is ERC20 {
     address public immutable partnerAddress;
 
     address public nexumManager;
-    bool public nexumManagerSet;
 
     address public treasuryBTC;
     bool public treasuryBTCSet;
@@ -52,12 +51,14 @@ contract NXLToken is ERC20 {
     uint256 public lastSnapshotId;
     mapping(uint256 => uint256) public snapshotBlock; // snapshotId -> blockNumber
 
+    // uint48 para block.number (uint32 se desborda en ~136 años a 1 bloque/3s)
+    mapping(uint256 => uint256) private _snapshotBlockExtended; // snapshotId -> blockNumber (uint256)
+
     Checkpoints.Trace208 private _totalSupplyCheckpoints;
     mapping(address => Checkpoints.Trace208) private _balanceCheckpoints;
 
     event RewardDistributed(address indexed recipient, uint256 amount);
     event VestedTokensWithdrawn(address indexed beneficiary, uint256 amount);
-    event NexumManagerSet(address indexed manager);
     event TreasuryBTCSet(address indexed treasury);
     event TokensBurned(uint256 amount);
     event SnapshotCreated(uint256 snapshotId, uint256 blockNumber);
@@ -91,12 +92,13 @@ contract NXLToken is ERC20 {
 
     // ======= One-time config =======
 
+    /// @notice Set the NexumManager address exactly once. Must be called by deployer immediately post-deploy.
+    /// @dev Security: guarded by nexumManager == address(0) — can only be set once, permanently locks afterwards.
     function setNexumManager(address _nexumManager) external {
-        require(!nexumManagerSet, "Manager already set");
-        require(_nexumManager != address(0), "Invalid manager");
+        require(nexumManager == address(0), "Manager already set");
+        require(_nexumManager != address(0), "Invalid nexumManager");
+        require(_nexumManager.code.length > 0, "NexumManager must be contract");
         nexumManager = _nexumManager;
-        nexumManagerSet = true;
-        emit NexumManagerSet(_nexumManager);
     }
 
     function setTreasuryBTC(address _treasuryBTC) external onlyNexumManager {
@@ -192,13 +194,13 @@ contract NXLToken is ERC20 {
     function balanceOfAt(address account, uint256 snapshotId) external view returns (uint256) {
         uint256 blk = snapshotBlock[snapshotId];
         require(blk != 0, "Snapshot not found");
-        return _balanceCheckpoints[account].upperLookup(uint32(blk));
+        return _balanceCheckpoints[account].upperLookup(uint48(blk));
     }
 
     function totalSupplyAt(uint256 snapshotId) external view returns (uint256) {
         uint256 blk = snapshotBlock[snapshotId];
         require(blk != 0, "Snapshot not found");
-        return _totalSupplyCheckpoints.upperLookup(uint32(blk));
+        return _totalSupplyCheckpoints.upperLookup(uint48(blk));
     }
 
     // ======= Checkpoints hooks =======
@@ -213,13 +215,15 @@ contract NXLToken is ERC20 {
         if (from == address(0) || to == address(0)) _writeTotalSupplyCheckpoint();
     }
 
+    /// @dev Usa uint48 para block.number para evitar overflow futuro (uint32 desborda ~año 2158).
     function _writeBalanceCheckpoint(address account) private {
         uint256 bal = balanceOf(account);
-        _balanceCheckpoints[account].push(uint32(block.number), uint208(bal));
+        // uint208 safe: max balance = 100M * 1e18 = 1e26 < 2^208 (~4e62)
+        _balanceCheckpoints[account].push(uint48(block.number), uint208(bal));
     }
 
     function _writeTotalSupplyCheckpoint() private {
         uint256 ts = totalSupply();
-        _totalSupplyCheckpoints.push(uint32(block.number), uint208(ts));
+        _totalSupplyCheckpoints.push(uint48(block.number), uint208(ts));
     }
 }

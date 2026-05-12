@@ -11,7 +11,8 @@ async function deployMocks() {
     auditFunds,
     buyer,
     investor1,
-    other
+    other,
+    guardian
   ] = await ethers.getSigners();
 
   const StableMock = await ethers.getContractFactory("MockERC20");
@@ -32,7 +33,7 @@ async function deployMocks() {
   await vrf.fundSubscription(subId, ethers.parseEther("1"));
 
   return {
-    signers: { deployer, founder, partner, feesReceiver, operationsService, auditFunds, buyer, investor1, other },
+    signers: { deployer, founder, partner, feesReceiver, operationsService, auditFunds, buyer, investor1, other, guardian },
     stable,
     nxl,
     treasury,
@@ -56,7 +57,8 @@ async function deployManager(fixtures) {
     signers.partner.address,
     signers.feesReceiver.address,
     signers.operationsService.address,
-    signers.auditFunds.address
+    signers.auditFunds.address,
+    signers.guardian.address
   );
 
   await vrf.addConsumer(subId, await manager.getAddress());
@@ -90,7 +92,7 @@ async function fillPremiumRoundSpecific(manager, buyer) {
 describe("NexumManager - PREMIUM claims", function () {
   it("permite claimStable, withdrawAuditFunds y muestra claimNXL solo si existe accrual", async function () {
     const fixtures = await deployMocks();
-    const { signers, stable, nxl } = fixtures;
+    const { signers, stable, nxl, vrf } = fixtures;
     const manager = await deployManager(fixtures);
 
     const productId = 2;
@@ -111,9 +113,24 @@ describe("NexumManager - PREMIUM claims", function () {
     await ethers.provider.send("evm_increaseTime", [Number(VRF_TIMEOUT) + 1]);
     await ethers.provider.send("evm_mine", []);
 
-    await manager.resolveStuckRound(productId, roundId);
+    const resolveTx = await manager.resolveStuckRound(productId, roundId);
+    const resolveReceipt = await resolveTx.wait();
+
+    // resolveStuckRound re-issues VRF — find new requestId from StuckRoundResolved event
+    let newRequestId;
+    for (const log of resolveReceipt.logs) {
+      try {
+        const parsed = manager.interface.parseLog(log);
+        if (parsed?.name === "StuckRoundResolved") { newRequestId = parsed.args[2]; break; }
+      } catch (e) {}
+    }
+    if (!newRequestId) throw new Error("StuckRoundResolved event not found");
+
+    // Fulfill VRF to complete the round and trigger settlement
+    await vrf.fulfillRandomWordsWithOverride(newRequestId, await manager.getAddress(), [42n]);
 
     const round = await manager.rounds(productId, roundId);
+    expect(round.completed).to.equal(true);
     const winner = round.winner;
 
     const investorClaimable = await manager.claimableStable(signers.investor1.address);

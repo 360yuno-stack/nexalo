@@ -11,6 +11,9 @@ describe("NexumManager - NXL claims", function () {
   beforeEach(async function () {
     [owner, founder, partner, feesReceiver, operationsService, auditFunds, buyer] =
       await ethers.getSigners();
+    // guardian is 8th signer (index 7)
+    const signers = await ethers.getSigners();
+    const guardian = signers[7];
 
     const Stable = await ethers.getContractFactory("MockERC20");
     stable = await Stable.deploy("Mock USD", "mUSD", 18);
@@ -46,7 +49,8 @@ describe("NexumManager - NXL claims", function () {
       partner.address,
       feesReceiver.address,
       operationsService.address,
-      auditFunds.address
+      auditFunds.address,
+      guardian.address
     );
     await manager.waitForDeployment();
 
