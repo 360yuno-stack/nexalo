@@ -47,3 +47,6 @@ node_modules/
 
 # Local notes
 *ROADMAP*.txt
+
+nexalo-videos/node_modules/
+nexalo-videos/out/
