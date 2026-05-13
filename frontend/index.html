@@ -905,18 +905,18 @@
         <div class="grid md:grid-cols-3 gap-6 mb-12">
           <div class="bg-black/60 backdrop-blur-xl border border-[#00FF41]/40 rounded-2xl p-6 text-center shadow-lg shadow-[#00FF41]/10">
             <p class="text-gray-400 font-mono text-sm mb-2">TOTAL VALUE LOCKED (TVL)</p>
-            <p class="text-4xl font-black text-white">$<span id="tvl-amount">1,245,600</span></p>
-            <p class="text-[#00FF41] text-xs mt-2">+12% este mes</p>
+            <p class="text-4xl font-black text-white">$<span id="tvl-amount">0.00</span></p>
+            <p class="text-yellow-400 text-xs mt-2">Sincronizando on-chain...</p>
           </div>
           <div class="bg-gradient-to-b from-[#00FF41]/20 to-black/60 border border-[#00FF41] rounded-2xl p-6 text-center shadow-lg shadow-[#00FF41]/20 transform scale-105">
             <p class="text-[#00FF41] font-mono text-sm mb-2 font-bold">APY ESTIMADO</p>
-            <p class="text-5xl font-black text-white neon-text">8.5%</p>
-            <p class="text-[#00FF41] text-xs mt-2">Compuesto Diariamente</p>
+            <p class="text-5xl font-black text-white neon-text">Dinámico</p>
+            <p class="text-[#00FF41] text-xs mt-2">Basado en el mercado (Aave/AIYield)</p>
           </div>
           <div class="bg-black/60 backdrop-blur-xl border border-[#00FF41]/40 rounded-2xl p-6 text-center shadow-lg shadow-[#00FF41]/10">
             <p class="text-gray-400 font-mono text-sm mb-2">RENDIMIENTO GENERADO</p>
-            <p class="text-4xl font-black text-white">$<span id="yield-generated">14,230</span></p>
-            <p class="text-[#00FF41] text-xs mt-2">Distribuido a Stakers</p>
+            <p class="text-4xl font-black text-white">$<span id="yield-generated">0.00</span></p>
+            <p class="text-yellow-400 text-xs mt-2">Cargando...</p>
           </div>
         </div>
 
@@ -987,32 +987,32 @@
           <div class="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
           <div class="grid md:grid-cols-2 gap-12 items-center relative z-10">
             <div>
-              <h3 class="text-3xl font-black text-white mb-4">La DAO de Donaciones <span class="text-blue-400">(DonationVault)</span></h3>
+              <h3 class="text-3xl font-black text-white mb-4">Fondo Filantrópico <span class="text-blue-400">(DonationVault)</span></h3>
               <p class="text-gray-300 mb-6 text-lg leading-relaxed">
                 El ecosistema Nexalo reserva automáticamente una fracción de sus rendimientos de tesorería para iniciativas filantrópicas globales. 
-                Los holders de NXL (mediante Staking) tienen derecho a proponer y votar qué causas de la vida real recibirán fondos.
+                Todo el flujo de capital es 100% autónomo y programado mediante smart contracts, sin intervención humana.
               </p>
               <ul class="space-y-4">
                 <li class="flex items-start">
                   <span class="text-blue-400 text-xl mr-3">💧</span>
-                  <span class="text-gray-200">Acceso a agua potable y saneamiento en zonas rurales.</span>
+                  <span class="text-gray-200">Distribución autónoma a ONGs verificadas.</span>
                 </li>
                 <li class="flex items-start">
                   <span class="text-blue-400 text-xl mr-3">📚</span>
-                  <span class="text-gray-200">Educación tecnológica y becas en países en vías de desarrollo.</span>
+                  <span class="text-gray-200">Educación tecnológica impulsada por blockchain.</span>
                 </li>
                 <li class="flex items-start">
                   <span class="text-blue-400 text-xl mr-3">🌱</span>
-                  <span class="text-gray-200">Iniciativas de reforestación y reducción de huella de carbono.</span>
+                  <span class="text-gray-200">Cero intermediarios humanos. Código = Ley.</span>
                 </li>
               </ul>
             </div>
             <div class="bg-blue-900/20 border border-blue-500/30 p-8 rounded-2xl text-center">
               <p class="text-blue-400 font-mono text-sm mb-2">FONDOS ACUMULADOS PARA DONACIÓN</p>
-              <p class="text-6xl font-black text-white mb-4">$<span id="donation-funds">25,840</span></p>
-              <p class="text-gray-400 text-sm mb-6">A la espera de la próxima votación de la DAO</p>
-              <button class="bg-blue-500 text-white font-black px-8 py-3 rounded-xl hover:bg-blue-400 transition w-full shadow-lg shadow-blue-500/20">
-                VER PROPUESTAS ACTIVAS
+              <p class="text-6xl font-black text-white mb-4">$<span id="donation-funds">0.00</span></p>
+              <p class="text-gray-400 text-sm mb-6">Auditable públicamente on-chain</p>
+              <button class="bg-blue-500/50 text-gray-300 font-black px-8 py-3 rounded-xl cursor-not-allowed w-full shadow-lg shadow-blue-500/20">
+                ESPERANDO PRIMER ROUND
               </button>
             </div>
           </div>
@@ -1026,21 +1026,34 @@
     <section class="py-24 px-6">
       <div class="max-w-5xl mx-auto">
         <h2 class="text-5xl font-black font-mono text-center neon-text text-[#00FF41] mb-12">STAKING NXL</h2>
-        <div class="bg-black/60 backdrop-blur-xl neon-border p-12 rounded-2xl text-center">
-          <div class="text-8xl mb-6">🚧</div>
-          <h3 class="text-3xl font-black text-yellow-400 mb-4">EN DISEÑO</h3>
-          <p class="text-xl text-gray-300 mb-8">
-            El sistema de staking NXL formará parte de la DAO de tesorería. Todavía no hay contrato de staking desplegado ni APY definido.
-          </p>
-          <div class="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto text-left">
-            <ul class="space-y-3 text-lg text-gray-300">
-              <li class="flex items-center"><span class="text-[#00FF41] mr-3">✓</span>Recompensas financiadas desde TreasuryBTC (10% de cada ronda)</li>
-              <li class="flex items-center"><span class="text-[#00FF41] mr-3">✓</span>Parámetros (APY, lockup) definidos por voto de la comunidad</li>
-            </ul>
-            <ul class="space-y-3 text-lg text-gray-300">
-              <li class="flex items-center"><span class="text-[#00FF41] mr-3">✓</span>Todo el flujo de fondos visible y auditable on-chain</li>
-              <li class="flex items-center"><span class="text-[#00FF41] mr-3">✓</span>Integración futura con protocolos DeFi externos (sujeto a auditoría)</li>
-            </ul>
+        <div class="grid md:grid-cols-2 gap-8 mb-12">
+          <!-- STAKING PANEL -->
+          <div class="bg-black/60 backdrop-blur-xl border border-[#00FF41] rounded-2xl p-8">
+            <h3 class="text-2xl font-black text-white mb-6">Tu Staking de NXL</h3>
+            <p class="text-gray-400 text-sm mb-6">Haz stake de tus tokens NXL para generar ingresos pasivos en WBTC (Bitcoin).</p>
+            
+            <div class="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-gray-700 mb-6">
+              <span class="text-gray-300 font-bold">NXL en Stake:</span>
+              <span class="text-3xl font-black text-[#00FF41]">0.00</span>
+            </div>
+            
+            <div class="flex gap-4">
+              <input type="number" placeholder="Cantidad de NXL" class="flex-1 bg-black/50 border border-gray-700 text-white rounded-lg px-4 py-2">
+              <button class="bg-gradient-to-r from-[#00FF41] to-[#00cc33] text-black font-black px-6 py-2 rounded-lg hover:scale-105 transition">STAKE</button>
+            </div>
+          </div>
+          
+          <!-- REWARDS PANEL -->
+          <div class="bg-black/60 backdrop-blur-xl border border-yellow-400 rounded-2xl p-8">
+            <h3 class="text-2xl font-black text-white mb-6">Recompensas (WBTC)</h3>
+            <p class="text-gray-400 text-sm mb-6">El TreasuryBTC inyecta dividendos aquí de manera autónoma provenientes del yield generado.</p>
+            
+            <div class="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-gray-700 mb-6">
+              <span class="text-gray-300 font-bold">WBTC Generado:</span>
+              <span class="text-3xl font-black text-yellow-400">0.00000000</span>
+            </div>
+            
+            <button class="w-full bg-yellow-400 text-black font-black px-6 py-3 rounded-lg hover:scale-105 transition mt-auto">RECLAMAR WBTC</button>
           </div>
         </div>
       </div>
