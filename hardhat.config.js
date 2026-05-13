@@ -5,6 +5,11 @@ require("hardhat-gas-reporter");
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
 
+// Fail-fast ENV validation for Mainnet
+if (process.env.NETWORK === "bsc" && !PRIVATE_KEY) {
+  console.warn("⚠️  WARNING: PRIVATE_KEY is missing. Production deployments will fail.");
+}
+
 module.exports = {
   solidity: {
     version: "0.8.20",
@@ -19,7 +24,6 @@ module.exports = {
       chainId: 31337,
       blockGasLimit: 30_000_000,
       gasPrice: "auto",
-      allowUnlimitedContractSize: true,
       throwOnCallFailures: true,
       throwOnTransactionFailures: true,
       mining: {

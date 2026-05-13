@@ -92,8 +92,8 @@ jobs:
         run: |
           COVERAGE=$(cat coverage/lcov.info | grep -o 'DA:[0-9]*,[0-9]*' | awk -F',' 'BEGIN{hit=0;total=0} {total++; if($2>0) hit++} END{printf "%.1f", hit/total*100}')
           echo "Line coverage: $COVERAGE%"
-          # Warn if below 90%
-          python3 -c "import sys; c=$COVERAGE; sys.exit(1) if c < 80 else print(f'Coverage OK: {c}%')"
+          # Fail if below 90%
+          python3 -c "import sys; c=$COVERAGE; sys.exit(1) if c < 90 else print(f'Coverage OK: {c}%')"
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
@@ -134,3 +134,16 @@ jobs:
           cache: "npm"
       - run: npm ci
       - run: npx solhint "contracts/**/*.sol" --ignore-path .solhintignore || true
+
+  # ── Job 7: Static Analysis (Slither) ─────────────────────────────────────────
+  slither:
+    name: Slither Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Slither
+        uses: crytic/slither-action@v0.3.1
+        with:
+          target: 'contracts/'
+          slither-args: '--exclude-dependencies --filter-paths "mocks"'
+          fail-on: none # Warn for now, fix before mainnet
