@@ -1,0 +1,19 @@
+[profile.default]
+src = "contracts"
+out = "out"
+libs = ["node_modules"]
+test = "test/invariants"
+cache_path = "forge-cache"
+
+# Optimizer settings matching Hardhat
+optimizer = true
+optimizer_runs = 200
+via_ir = true
+
+[fuzz]
+runs = 10000
+
+[invariant]
+runs = 256
+depth = 100
+fail_on_revert = false
