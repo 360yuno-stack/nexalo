@@ -39,4 +39,23 @@ This document addresses advanced economic, systemic, and operational risks as de
 - `ReentrancyGuard` protects all outbound asset transfers.
 
 ---
+
+## 7. Core Assumptions & Systemic Risks
+
+### Trust Assumptions
+- **Owner / Guardian:** The Guardian is trusted ONLY to pause the system (`emergencyPause`). They cannot extract funds, alter logic, or manipulate winners. The `owner` role is renounced permanently (`finalizeAutonomy()`).
+- **Chainlink VRF:** We assume Chainlink nodes will not permanently censor our randomness requests.
+
+### Liveness Assumptions & Failure Modes
+- **VRF Callback Failure:** If VRF is delayed or fails (e.g., gas spikes, node downtime), the system does not halt indefinitely. After a 7-day timeout, `resolveStuckRound` allows any user to restart the VRF request, ensuring the protocol remains alive.
+- **Batched Settlement Interruption:** The protocol bounds the maximum tickets per transaction (e.g., 10 tickets) to guarantee that buying or settling never exceeds the block gas limit (Block Gas Limit exhaustion).
+
+### Oracle & Chain Reorg Analysis
+- **Reorgs:** Because Chainlink VRF requires multiple block confirmations, small chain reorgs on BSC do not affect the randomness settlement.
+- **Time-based Attacks:** Timestamps (`block.timestamp`) are used strictly for long-duration windows (7-day timeouts, 1-year vesting). Minor miner manipulation (seconds) has zero economic impact.
+
+### Economic Griefing & Asymmetry
+- **Griefing Settlement:** Malicious users cannot force "bad batches" or spam 0-value tickets because `quantity` is strictly validated (1, 3, 5, 10) and requires exact `msg.value`.
+- **Temporal Accounting:** Funds are distributed *instantly* upon ticket purchase. There is no delayed "accounting pool" that can be manipulated by sandwiching trades between blocks.
+
 *Nexalo is built for resilience. Complexity is the enemy of security.*

@@ -5,11 +5,13 @@ import {Test} from "forge-std/Test.sol";
 import "../../contracts/NexumManager.sol";
 import "../../contracts/TestUSDT.sol";
 import "../../contracts/NXLToken.sol";
+import "./Handler.t.sol";
 
 contract NexaloInvariantTest is Test {
     NexumManager public manager;
     TestUSDT public usdt;
     NXLToken public nxl;
+    NexaloHandler public handler;
 
     address founder = address(0x1);
     address partner = address(0x2);
@@ -44,17 +46,26 @@ contract NexaloInvariantTest is Test {
         manager.setEcosystemAddresses(address(0x10), address(0x11), address(0x12)); // Mocks
         manager.configureNXLTokenTreasury(address(0x13));
         manager.finalizeAutonomy();
+
+        handler = new NexaloHandler(manager, usdt);
+        targetContract(address(handler));
     }
 
-    /// @dev Fuzzing user actions (Buying tickets)
-    function buyTicketsFuzz(uint256 productId, uint256 quantity) public {
-        productId = productId % 6;
-        quantity = quantity % 10 + 1; // 1 to 10
+    /// @notice Differential Accounting Invariant
+    function invariant_DifferentialAccounting() public view {
+        // Compare the real contract state to our handler's ghost variables
+        uint256 realPrizePot = 0;
+        uint256 realInstantPot = 0;
         
-        // Mock buying by ignoring requirements if they fail, we only care about invariants
-        try manager.buyTickets(productId, quantity, address(0)) {
-        } catch {
-        }
+        uint256 currentRoundId = manager.currentRound(0); // Only checking FLASH for simplicity
+        (,,,,uint256 prizePot,uint256 instantPot,,,,) = manager.rounds(0, currentRoundId);
+        
+        realPrizePot += prizePot;
+        realInstantPot += instantPot;
+
+        // Note: Real state might be higher due to referral spillover, but should never be less!
+        assert(realPrizePot >= handler.ghostExpectedPrizePot());
+        assert(realInstantPot >= handler.ghostExpectedInstantPot());
     }
 
     /// @notice The absolute most critical invariant in any financial protocol.
