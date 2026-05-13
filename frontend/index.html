@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NEXALO - Sistema Autónomo de Lotería Descentralizada</title>
+  <title>NEXALO — Protocolo DeFi Autónomo | Rendimiento Real en Blockchain</title>
+  <meta name="description" content="El primer protocolo de lotería DeFi completamente autónomo en BSC. Rendimientos reales en USDT y WBTC. Auditable on-chain. Chainlink VRF.">
 
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%233B82F6'/><text y='.85em' font-size='60' x='20'>N</text></svg>">
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
   <!-- WalletConnect v2 -->
@@ -18,369 +19,636 @@
   <script src="./config.js"></script>
 
   <style>
-/* Language switcher */
-.lang-btn { color: #6b7280; }
-.lang-btn.active-lang { color: #00FF41; background: rgba(0,255,65,0.15); }
-/* --- NEXALO rotating badge --- */
-.badge-wrap{
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  margin: 26px auto 10px;
-}
-
-.nexalo-badge{
-  width: min(420px, 92vw);
-  height: auto;
-  display:block;
-
-  transform-style: preserve-3d;
-  transform-origin: center center;
-  will-change: transform;
-
-  animation: spinY 6s linear infinite;
-  filter: drop-shadow(0 18px 35px rgba(0,0,0,.55));
-}
-
-@keyframes spinY{
-  0%   { transform: perspective(900px) rotateY(0deg); }
-  100% { transform: perspective(900px) rotateY(360deg); }
-}
-
-.nexalo-badge:hover{
-  animation-play-state: paused;
-}
-
-@media (prefers-reduced-motion: reduce){
-  .nexalo-badge{ animation: none; }
-}
-
+    /* ── NEXALO INSTITUTIONAL DESIGN SYSTEM ─────────────────────────── */
+    :root {
+      --blue:    #3B82F6;
+      --blue-d:  #1D4ED8;
+      --emerald: #10B981;
+      --gold:    #F59E0B;
+      --surface: rgba(255,255,255,0.04);
+      --border:  rgba(255,255,255,0.08);
+      --text:    #F1F5F9;
+      --muted:   #94A3B8;
+    }
 
     * { box-sizing: border-box; }
 
     body {
-      font-family: 'Rajdhani', sans-serif;
-      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #0a0a15 100%);
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #080B12;
       min-height: 100vh;
+      color: var(--text);
     }
-    .font-mono { font-family: 'Space Mono', monospace; }
-    .neon-text {
-      text-shadow: 0 0 10px rgba(0, 255, 65, 0.6), 0 0 20px rgba(0, 255, 65, 0.4), 0 0 30px rgba(0, 255, 65, 0.2);
+
+    /* Fondo con grid sutil */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
     }
-    .neon-border {
-      border: 1px solid rgba(0, 255, 65, 0.4);
-      box-shadow: 0 0 15px rgba(0, 255, 65, 0.15);
+
+    /* Orbes de fondo */
+    body::after {
+      content: '';
+      position: fixed;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(59,130,246,0.07) 0%, transparent 70%);
+      top: -100px; right: -100px;
+      pointer-events: none;
+      z-index: 0;
     }
-    .card-hover { transition: all 0.3s ease; }
+
+    /* Typography */
+    .font-display { font-family: 'Syne', sans-serif; }
+    .font-mono    { font-family: 'Inter', monospace; letter-spacing: -0.02em; }
+
+    /* Glassmorphism Cards */
+    .glass {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .glass-blue {
+      background: rgba(59,130,246,0.08);
+      border: 1px solid rgba(59,130,246,0.20);
+      backdrop-filter: blur(20px);
+    }
+
+    .glass-emerald {
+      background: rgba(16,185,129,0.08);
+      border: 1px solid rgba(16,185,129,0.20);
+      backdrop-filter: blur(20px);
+    }
+
+    .glass-gold {
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.20);
+      backdrop-filter: blur(20px);
+    }
+
+    /* Accent glow text */
+    .text-glow-blue  { text-shadow: 0 0 20px rgba(59,130,246,0.5); }
+    .text-glow-green { text-shadow: 0 0 20px rgba(16,185,129,0.5); }
+    .text-glow-gold  { text-shadow: 0 0 20px rgba(245,158,11,0.5);  }
+
+    /* Keep compat with old neon-text/neon-border references */
+    .neon-text  { color: var(--blue); text-shadow: 0 0 20px rgba(59,130,246,0.4); }
+    .neon-border { border: 1px solid rgba(59,130,246,0.3); box-shadow: 0 0 20px rgba(59,130,246,0.08); }
+
+    /* Card hover lift */
+    .card-hover { transition: all 0.3s cubic-bezier(0.4,0,0.2,1); }
     .card-hover:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 15px 40px rgba(0, 255, 65, 0.25);
+      transform: translateY(-6px);
+      box-shadow: 0 20px 60px rgba(59,130,246,0.15);
+      border-color: rgba(59,130,246,0.35);
     }
 
+    /* Prize amounts — subtle pulse */
     @keyframes pulsePrize {
-      0%, 100% { transform: scale(1); text-shadow: 0 0 20px currentColor; }
-      50% { transform: scale(1.15); text-shadow: 0 0 30px currentColor, 0 0 60px currentColor; }
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.75; }
     }
-    .prize-amount {
-      animation: pulsePrize 2.5s ease-in-out infinite;
-      font-weight: 900;
-      letter-spacing: 2px;
-    }
+    .prize-amount { animation: pulsePrize 3s ease-in-out infinite; font-weight: 800; }
 
-    .prize-flash { color: #00FF41; }
-    .prize-original { color: #FFD700; }
-    .prize-premium { color: #A855F7; }
-    .prize-elite { color: #00F3FF; }
-    .prize-vip { color: #FF1493; }
-    .prize-blackblok { color: #FF6600; }
+    /* Product accent colors — refined */
+    .prize-flash    { color: #10B981; }
+    .prize-original { color: #F59E0B; }
+    .prize-premium  { color: #A78BFA; }
+    .prize-elite    { color: #38BDF8; }
+    .prize-vip      { color: #F472B6; }
+    .prize-blackblok{ color: #FB923C; }
 
+    /* Product grid */
     .nexum-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
+      gap: 1.25rem;
       max-width: 1400px;
       margin: 0 auto;
     }
+    @media (max-width: 1024px) { .nexum-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 640px)  { .nexum-grid { grid-template-columns: 1fr; } }
 
-    @media (max-width: 1024px) {
-      .nexum-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-
-    @media (max-width: 640px) {
-      .nexum-grid { grid-template-columns: 1fr; }
-    }
-
+    /* Sections */
     .section { display: none; }
     .section.active { display: block; }
 
-    /* MODAL BASE */
+    /* Button primary */
+    .btn-primary {
+      background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+      color: white;
+      font-weight: 700;
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      transition: all 0.2s;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(59,130,246,0.4); }
+
+    .btn-emerald {
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+      color: white; font-weight: 700;
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      transition: all 0.2s; border: none; cursor: pointer;
+    }
+    .btn-emerald:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(16,185,129,0.35); }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--text);
+      font-weight: 600;
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .btn-outline:hover { border-color: var(--blue); color: var(--blue); background: rgba(59,130,246,0.08); }
+
+    /* Progress bar */
+    .progress-track { background: rgba(255,255,255,0.06); border-radius: 99px; height: 6px; overflow: hidden; }
+    .progress-fill  { height: 100%; border-radius: 99px; transition: width 0.8s ease; }
+
+    /* KPI Number counter animation */
+    @keyframes countUp { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+    .kpi-value { animation: countUp 0.6s ease forwards; }
+
+    /* Infographic flow arrow */
+    .flow-arrow {
+      width: 40px; height: 2px;
+      background: linear-gradient(90deg, var(--blue), transparent);
+      position: relative;
+    }
+    .flow-arrow::after {
+      content: '';
+      position: absolute;
+      right: 0; top: -4px;
+      border: 5px solid transparent;
+      border-left: 8px solid var(--blue);
+    }
+
+    /* Donut chart SVG */
+    .donut-segment { transition: stroke-dashoffset 1s ease; }
+
+    /* Modal */
     .modal {
       display: none;
       position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.95);
+      inset: 0;
+      background: rgba(0,0,0,0.85);
       z-index: 9999;
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(12px);
     }
-    .modal.active {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+    .modal.active { display: flex; align-items: center; justify-content: center; }
     .modal-content {
-      background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
-      border: 2px solid #00FF41;
+      background: #0F1629;
+      border: 1px solid rgba(59,130,246,0.3);
       border-radius: 20px;
-      padding: 30px;
+      padding: 32px;
       max-width: 520px;
       width: 90%;
       max-height: 90vh;
       overflow-y: auto;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.8);
     }
 
-    /* MODAL NUMEROS */
+    /* Number input */
     .number-input {
-      background: rgba(0, 0, 0, 0.5);
-      border: 2px solid #00FF41;
-      color: #00FF41;
-      font-family: 'Space Mono', monospace;
-      font-size: 3rem;
+      background: rgba(59,130,246,0.06);
+      border: 2px solid rgba(59,130,246,0.4);
+      color: #60A5FA;
+      font-family: 'Inter', monospace;
+      font-size: 2.5rem;
+      font-weight: 800;
       text-align: center;
       padding: 20px;
-      border-radius: 10px;
+      border-radius: 12px;
       width: 100%;
-      letter-spacing: 10px;
+      letter-spacing: 8px;
     }
-    .number-input:focus {
-      outline: none;
-      box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
-    }
-    .selected-numbers {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
+    .number-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+
+    .selected-numbers { display: flex; flex-wrap: wrap; gap: 8px; }
     .selected-number {
-      background: rgba(0, 255, 65, 0.2);
-      border: 1px solid #00FF41;
-      padding: 10px 15px;
+      background: rgba(59,130,246,0.12);
+      border: 1px solid rgba(59,130,246,0.3);
+      padding: 8px 14px;
       border-radius: 8px;
-      font-family: 'Space Mono', monospace;
-      font-size: 1.2rem;
+      font-size: 1rem;
+      font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
     .selected-number button {
-      background: red;
-      color: white;
+      background: rgba(239,68,68,0.2);
+      color: #EF4444;
       border: none;
-      width: 20px;
-      height: 20px;
+      width: 20px; height: 20px;
       border-radius: 50%;
       cursor: pointer;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
+      line-height: 1;
     }
 
-    .video-container {
-      position: relative;
-      padding-bottom: 56.25%;
-      height: 0;
-      overflow: hidden;
+    /* Video */
+    .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; }
+    .video-container iframe { position: absolute; top:0; left:0; width:100%; height:100%; }
+
+    /* Lang switcher */
+    .lang-btn { color: var(--muted); }
+    .lang-btn.active-lang { color: var(--blue); background: rgba(59,130,246,0.12); }
+
+    /* Rotating badge */
+    .badge-wrap { display:flex; justify-content:center; align-items:center; margin: 32px auto 0; }
+    .nexalo-badge {
+      width: min(300px, 80vw);
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 20px 40px rgba(59,130,246,0.3));
+      animation: floatBadge 4s ease-in-out infinite;
     }
-    .video-container iframe {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+    @keyframes floatBadge {
+      0%,100% { transform: translateY(0px) rotate(-1deg); }
+      50%      { transform: translateY(-12px) rotate(1deg); }
     }
+    .nexalo-badge:hover { animation-play-state: paused; }
+    @media (prefers-reduced-motion: reduce) { .nexalo-badge { animation: none; } }
+
+    /* Stat badges in hero */
+    .stat-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 6px 16px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0A0B0D; }
+    ::-webkit-scrollbar-thumb { background: rgba(59,130,246,0.3); border-radius: 3px; }
   </style>
 </head>
 
 <body class="min-h-screen text-gray-100">
 
-  <!-- ✅ MODAL MULTIWALLET (NUEVO) -->
+  <!-- MODAL MULTIWALLET -->
   <div id="wallet-select-modal" class="modal">
     <div class="modal-content">
-      <h2 class="text-3xl font-black text-[#00FF41] mb-4 text-center">CONECTAR WALLET</h2>
-      <p class="text-gray-400 text-center mb-6">Elige cómo quieres conectar</p>
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+          <svg width="20" height="20" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7H5a2 2 0 00-2 2v8a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 3H8L5 7h14l-3-4z"/><circle cx="12" cy="13" r="2"/></svg>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-white">Conectar Wallet</h2>
+          <p class="text-sm text-slate-400">Elige tu método de conexión</p>
+        </div>
+      </div>
 
-      <div class="grid gap-3">
+      <div class="grid gap-3 mb-4">
         <button onclick="connectInjectedWallet()"
-          class="w-full bg-gradient-to-r from-[#00FF41] to-[#00cc33] text-black py-3 rounded-lg font-black text-lg hover:scale-105 transition">
-          🦊 MetaMask / Wallet del navegador
+          class="w-full btn-primary py-3 rounded-xl font-semibold text-base flex items-center justify-center gap-2">
+          <span>MetaMask / Browser Wallet</span>
         </button>
 
         <button onclick="connectWalletConnect()"
-          class="w-full bg-black/50 border-2 border-[#00FF41] text-[#00FF41] py-3 rounded-lg font-black text-lg hover:bg-[#00FF41]/10 transition">
-          📱 WalletConnect (QR / Móvil)
+          class="w-full btn-outline py-3 rounded-xl font-semibold text-base flex items-center justify-center gap-2">
+          <span>WalletConnect (QR / Móvil)</span>
         </button>
 
         <button onclick="disconnectWallet()"
-          class="w-full bg-gray-800 border border-gray-600 text-gray-200 py-3 rounded-lg font-bold hover:bg-gray-700 transition">
-          🔌 Desconectar
+          class="w-full py-3 rounded-xl font-semibold bg-white/5 text-slate-400 hover:bg-white/10 transition text-sm">
+          Desconectar
         </button>
       </div>
 
-      <div class="mt-5">
-        <button onclick="closeWalletSelectModal()"
-          class="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-bold transition">
-          ❌ Cerrar
-        </button>
-      </div>
-
-      <p class="text-xs text-gray-500 mt-4 text-center">
-        WalletConnect requiere <span class="font-mono">WALLETCONNECT_PROJECT_ID</span> en <span class="font-mono">config.js</span>.
-      </p>
+      <button onclick="closeWalletSelectModal()"
+        class="w-full py-2 rounded-xl text-slate-500 hover:text-slate-300 transition text-sm">Cerrar</button>
+      <p class="text-xs text-slate-600 mt-3 text-center">WalletConnect requiere WALLETCONNECT_PROJECT_ID en config.js</p>
     </div>
   </div>
 
   <!-- MODAL SELECCIÓN DE NÚMEROS -->
   <div id="number-modal" class="modal">
     <div class="modal-content">
-      <h2 class="text-3xl font-black text-[#00FF41] mb-6 text-center" id="modal-title">SELECCIONA TUS NÚMEROS</h2>
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-white" id="modal-title">Selecciona tus números</h2>
+        <button onclick="closeModal()" class="text-slate-500 hover:text-white transition text-xl">&#x2715;</button>
+      </div>
 
-      <div class="mb-6">
-        <p class="text-gray-400 mb-3 text-center">Ingresa los números que deseas</p>
+      <div class="mb-5">
+        <p class="text-slate-400 mb-3 text-sm">Ingresa el número que deseas participar</p>
         <input type="text" id="number-input" class="number-input" placeholder="0000" maxlength="4">
-        <p class="text-xs text-gray-500 mt-2 text-center" id="number-format">Formato: 0000 a 9999</p>
+        <p class="text-xs text-slate-500 mt-2 text-center" id="number-format">Formato: 0000 a 9999</p>
       </div>
 
-      <div class="mb-6">
-        <button onclick="addNumber()" class="w-full bg-gradient-to-r from-[#00FF41] to-[#00cc33] text-black py-3 rounded-lg font-black text-lg hover:scale-105 transition">
-          ➕ AGREGAR NÚMERO
-        </button>
-      </div>
+      <button onclick="addNumber()" class="w-full btn-primary py-3 rounded-xl font-semibold text-base mb-5">
+        Agregar Número
+      </button>
 
-      <div class="mb-6">
-        <h3 class="text-lg font-bold text-[#00FF41] mb-3">Números Seleccionados (<span id="selected-count">0</span>):</h3>
-        <div id="selected-numbers-container" class="selected-numbers min-h-[100px] bg-black/40 p-4 rounded-lg">
-          <p class="text-gray-500 text-center w-full">Ningún número seleccionado</p>
+      <div class="mb-5">
+        <h3 class="text-sm font-semibold text-slate-300 mb-3">Seleccionados (<span id="selected-count">0</span>/10):</h3>
+        <div id="selected-numbers-container" class="selected-numbers min-h-[80px] bg-white/3 p-4 rounded-xl border border-white/5">
+          <p class="text-slate-600 text-center w-full text-sm">Ningún número seleccionado</p>
         </div>
       </div>
 
-      <div class="flex gap-4">
-        <button onclick="closeModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-bold transition">
-          ❌ CANCELAR
-        </button>
-        <button onclick="confirmPurchase()" class="flex-1 bg-gradient-to-r from-[#00FF41] to-[#00cc33] text-black py-3 rounded-lg font-black hover:scale-105 transition">
-          ✅ CONFIRMAR
-        </button>
+      <div class="flex gap-3">
+        <button onclick="closeModal()" class="flex-1 btn-outline py-3 rounded-xl font-semibold">Cancelar</button>
+        <button onclick="confirmPurchase()" class="flex-1 btn-primary py-3 rounded-xl font-semibold">Confirmar Compra</button>
       </div>
     </div>
   </div>
 
-  <!-- Info Banner -->
-  <div class="bg-black/70 border-b border-gray-800 py-3">
-    <div class="flex flex-wrap gap-6 px-6 justify-center items-center text-sm">
-      <div class="flex items-center space-x-2">
-        <span class="text-gray-400">🏗️ En desarrollo:</span>
-        <span class="text-[#00FF41] font-bold">BSC Testnet</span>
+  <!-- Ticker Banner -->
+  <div class="relative z-10 bg-[#060810]/90 border-b border-white/5 py-2 overflow-hidden">
+    <div class="flex gap-10 px-6 justify-center items-center text-sm flex-wrap">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-amber-400 inline-block animate-pulse"></span>
+        <span class="text-slate-400">Red:</span>
+        <span class="text-amber-400 font-semibold">BSC Testnet</span>
       </div>
-      <div class="flex items-center space-x-2">
-        <span class="text-gray-400">📊 Supply Total:</span>
-        <span class="text-[#00FF41] font-mono font-bold">100,000,000 NXL</span>
+      <div class="flex items-center gap-2">
+        <span class="text-slate-500">|</span>
+        <span class="text-slate-400">Supply:</span>
+        <span class="text-slate-200 font-mono font-semibold">100,000,000 NXL</span>
       </div>
-      <div class="flex items-center space-x-2">
-        <span class="text-gray-400">🎯 Distribución:</span>
-        <span class="text-gray-300 text-xs">96% Rewards</span>
+      <div class="flex items-center gap-2">
+        <span class="text-slate-500">|</span>
+        <span class="text-slate-400">Distribución:</span>
+        <span class="text-slate-200">96% Rewards — Verificable on-chain</span>
       </div>
-      <div class="flex items-center space-x-2">
-        <span class="text-gray-400">💵 Precio NXL:</span>
-        <span class="text-yellow-400 text-xs font-bold">Lo define el mercado (sin precio fijo ni promesas)</span>
+      <div class="flex items-center gap-2">
+        <span class="text-slate-500">|</span>
+        <span class="text-slate-400">Precio NXL:</span>
+        <span class="text-emerald-400 font-semibold">Lo fija el mercado libre</span>
       </div>
     </div>
   </div>
 
-  <!-- Header -->
-  <header class="bg-black/50 backdrop-blur-xl border-b border-gray-800 sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
-      <div class="flex items-center space-x-4 cursor-pointer" onclick="showSection('home')">
-        <div class="w-14 h-14 bg-gradient-to-br from-[#00FF41] to-[#00cc33] rounded-xl flex items-center justify-center shadow-lg">
-          <span class="text-3xl">⚡</span>
+  <!-- Header Institucional -->
+  <header class="relative z-50 bg-[#060810]/95 backdrop-blur-2xl border-b border-white/5 sticky top-0">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+
+      <!-- Logo -->
+      <div class="flex items-center gap-3 cursor-pointer" onclick="showSection('home')">
+        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
+          <span class="font-display font-black text-white text-lg">N</span>
         </div>
         <div>
-          <h1 class="text-3xl font-black font-mono neon-text text-[#00FF41]">NEXALO</h1>
-          <p class="text-xs text-gray-400 font-semibold tracking-wide">Fair Rewards. Real Value.</p>
+          <h1 class="font-display text-2xl font-extrabold text-white tracking-tight">NEXALO</h1>
+          <p class="text-xs text-slate-500 font-medium">DeFi Protocol &bull; BSC</p>
         </div>
       </div>
 
       <!-- NAV DESKTOP -->
-      <nav class="hidden md:flex space-x-6 text-base">
-        <a href="#" onclick="showSection('home'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Nexum</a>
-        <a href="#" onclick="showSection('account'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Mi Cuenta</a>
-        <a href="#" onclick="showSection('investor'); return false;" class="text-yellow-400 hover:text-white transition font-black neon-text">Inversores</a>
-        <a href="#" onclick="showSection('ambassadors'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Embajadores</a>
-        <a href="#" onclick="showSection('treasury'); return false;" class="text-[#00FF41] hover:text-white transition font-black neon-text">Tesorería DeFi</a>
-        <a href="#" onclick="showSection('impact'); return false;" class="text-blue-400 hover:text-white transition font-black">Impacto</a>
-        <a href="#" onclick="showSection('staking'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Staking</a>
-        <a href="#" onclick="showSection('videos'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Videos</a>
-        <a href="#" onclick="showSection('faq'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">FAQ</a>
+      <nav class="hidden lg:flex items-center gap-1">
+        <a href="#" onclick="showSection('home'); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition text-sm font-medium">Protocolo</a>
+        <a href="#" onclick="showSection('account'); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition text-sm font-medium">Mi Cuenta</a>
+        <a href="#" onclick="showSection('investor'); return false;" class="px-3 py-2 rounded-lg text-amber-400 hover:text-amber-300 hover:bg-amber-400/5 transition text-sm font-semibold">Inversores</a>
+        <a href="#" onclick="showSection('ambassadors'); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition text-sm font-medium">Embajadores</a>
+        <a href="#" onclick="showSection('treasury'); return false;" class="px-3 py-2 rounded-lg text-blue-400 hover:text-blue-300 hover:bg-blue-500/5 transition text-sm font-semibold">Tesorería</a>
+        <a href="#" onclick="showSection('impact'); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition text-sm font-medium">Impacto</a>
+        <a href="#" onclick="showSection('staking'); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition text-sm font-medium">Staking</a>
+        <a href="#" onclick="showSection('faq'); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition text-sm font-medium">FAQ</a>
       </nav>
 
-      <!-- SELECTOR IDIOMA -->
-      <div class="hidden md:flex items-center gap-1 bg-black/40 border border-gray-700 rounded-xl px-2 py-1">
-        <button data-lang="es" onclick="setLang('es')" class="lang-btn text-xs font-black px-2 py-1 rounded-lg transition hover:text-[#00FF41]" title="Español">ES</button>
-        <span class="text-gray-700">|</span>
-        <button data-lang="en" onclick="setLang('en')" class="lang-btn text-xs font-black px-2 py-1 rounded-lg transition hover:text-[#00FF41]" title="English">EN</button>
-        <span class="text-gray-700">|</span>
-        <button data-lang="pt" onclick="setLang('pt')" class="lang-btn text-xs font-black px-2 py-1 rounded-lg transition hover:text-[#00FF41]" title="Português">PT</button>
-      </div>
+      <!-- Right controls -->
+      <div class="flex items-center gap-2">
+        <!-- Language -->
+        <div class="hidden md:flex items-center gap-1 bg-white/3 border border-white/8 rounded-lg px-2 py-1">
+          <button data-lang="es" onclick="setLang('es')" class="lang-btn text-xs font-semibold px-2 py-1 rounded-md transition">ES</button>
+          <span class="text-slate-700">|</span>
+          <button data-lang="en" onclick="setLang('en')" class="lang-btn text-xs font-semibold px-2 py-1 rounded-md transition">EN</button>
+          <span class="text-slate-700">|</span>
+          <button data-lang="pt" onclick="setLang('pt')" class="lang-btn text-xs font-semibold px-2 py-1 rounded-md transition">PT</button>
+        </div>
 
-      <!-- BOTONES DERECHA -->
-      <div class="flex items-center space-x-3">
-        <!-- HAMBURGUESA (MOBILE) -->
-        <button id="mobileMenuBtn" class="md:hidden bg-black/40 border border-gray-700 px-4 py-3 rounded-xl font-black hover:bg-black/60 transition" aria-label="Abrir menú">
-          ☰
+        <!-- Hamburger -->
+        <button id="mobileMenuBtn" class="lg:hidden bg-white/5 border border-white/10 px-3 py-2 rounded-lg text-white hover:bg-white/8 transition" aria-label="Menú">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
         </button>
 
-        <!-- ✅ Botón conectar ahora abre el modal multiwallet -->
-        <button id="walletConnect" class="bg-gradient-to-r from-[#00FF41] to-[#00cc33] text-black px-6 py-3 rounded-xl font-black text-lg hover:scale-105 transition shadow-xl">
-          💼 <span id="walletText">Conectar</span>
+        <!-- Connect Button -->
+        <button id="walletConnect" onclick="openWalletSelectModal()" class="btn-primary px-5 py-2 rounded-lg text-sm">
+          <span id="walletText">Conectar Wallet</span>
         </button>
       </div>
     </div>
 
-    <!-- NAV MOBILE (dropdown) -->
-    <div id="mobileNav" class="md:hidden hidden border-t border-gray-800 bg-black/80 backdrop-blur-xl">
-      <div class="px-6 py-4 flex flex-col gap-3 text-base">
-        <a href="#" onclick="showSection('home'); closeMobileMenu(); return false;" class="text-gray-200 hover:text-[#00FF41] font-semibold">Nexum</a>
-        <a href="#" onclick="showSection('account'); closeMobileMenu(); return false;" class="text-gray-200 hover:text-[#00FF41] font-semibold">Mi Cuenta</a>
-        <a href="#" onclick="showSection('investor'); closeMobileMenu(); return false;" class="text-yellow-400 font-black">Inversores</a>
-        <a href="#" onclick="showSection('ambassadors'); closeMobileMenu(); return false;" class="text-gray-200 hover:text-[#00FF41] font-semibold">Embajadores</a>
-        <a href="#" onclick="showSection('treasury'); closeMobileMenu(); return false;" class="text-[#00FF41] font-black">Tesorería DeFi</a>
-        <a href="#" onclick="showSection('impact'); closeMobileMenu(); return false;" class="text-blue-400 font-black">Impacto Global</a>
-        <a href="#" onclick="showSection('staking'); closeMobileMenu(); return false;" class="text-gray-200 hover:text-[#00FF41] font-semibold">Staking</a>
-        <a href="#" onclick="showSection('videos'); closeMobileMenu(); return false;" class="text-gray-200 hover:text-[#00FF41] font-semibold">Videos</a>
-        <a href="#" onclick="showSection('faq'); closeMobileMenu(); return false;" class="text-gray-200 hover:text-[#00FF41] font-semibold">FAQ 💬</a>
+    <!-- NAV MOBILE -->
+    <div id="mobileNav" class="lg:hidden hidden border-t border-white/5 bg-[#060810]/98">
+      <div class="px-6 py-4 flex flex-col gap-1">
+        <a href="#" onclick="showSection('home'); closeMobileMenu(); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:bg-white/5 font-medium">Protocolo</a>
+        <a href="#" onclick="showSection('account'); closeMobileMenu(); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:bg-white/5 font-medium">Mi Cuenta</a>
+        <a href="#" onclick="showSection('investor'); closeMobileMenu(); return false;" class="px-3 py-2 rounded-lg text-amber-400 hover:bg-amber-400/5 font-semibold">Inversores</a>
+        <a href="#" onclick="showSection('ambassadors'); closeMobileMenu(); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:bg-white/5 font-medium">Embajadores</a>
+        <a href="#" onclick="showSection('treasury'); closeMobileMenu(); return false;" class="px-3 py-2 rounded-lg text-blue-400 hover:bg-blue-500/5 font-semibold">Tesorería DeFi</a>
+        <a href="#" onclick="showSection('impact'); closeMobileMenu(); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:bg-white/5 font-medium">Impacto Global</a>
+        <a href="#" onclick="showSection('staking'); closeMobileMenu(); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:bg-white/5 font-medium">Staking</a>
+        <a href="#" onclick="showSection('faq'); closeMobileMenu(); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:bg-white/5 font-medium">FAQ</a>
       </div>
     </div>
   </header>
 
   <!-- HOME SECTION -->
   <div id="home-section" class="section">
-    <!-- Hero Section -->
-    <section class="py-24 px-6">
-      <div class="max-w-7xl mx-auto text-center">
-        <h2 class="text-7xl font-black font-mono mb-8 leading-tight">
-          <span class="neon-text text-[#00FF41]">NEXALO</span>
-          <br>
-          <span class="text-5xl bg-gradient-to-r from-gray-100 to-gray-400 bg-clip-text text-transparent">
-            Sistema Autónomo de Lotería Descentralizada
-          </span>
-        </h2>
-  <p class="text-2xl text-gray-300 max-w-4xl mx-auto mb-12 leading-relaxed">
-  Participa en sorteos 100% transparentes verificados en blockchain. Elige tus números de la suerte y recibe tokens NXL automáticamente.
-</p>
 
-<div class="badge-wrap">
-  <img
-    class="nexalo-badge"
-    src="./img/nexalo-badge.png"
-    alt="NEXALO badge"
-  />
-</div>
+    <!-- Hero Institucional -->
+    <section class="relative py-28 px-6 overflow-hidden">
+      <!-- Background orb -->
+      <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div class="w-[800px] h-[800px] rounded-full" style="background: radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 65%)"></div>
+      </div>
+
+      <div class="relative max-w-6xl mx-auto text-center">
+        <!-- Trust badges -->
+        <div class="flex flex-wrap gap-3 justify-center mb-10">
+          <span class="stat-badge"><span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span> Chainlink VRF</span>
+          <span class="stat-badge"><span class="w-2 h-2 rounded-full bg-blue-400 inline-block"></span> OpenZeppelin</span>
+          <span class="stat-badge"><span class="w-2 h-2 rounded-full bg-purple-400 inline-block"></span> No Proxy · Immutable</span>
+          <span class="stat-badge"><span class="w-2 h-2 rounded-full bg-amber-400 inline-block animate-pulse"></span> BSC Testnet</span>
+        </div>
+
+        <!-- Main headline -->
+        <h2 class="font-display text-6xl md:text-8xl font-extrabold text-white mb-6 leading-none tracking-tight">
+          El Protocolo de<br>
+          <span class="bg-gradient-to-r from-blue-400 via-blue-500 to-emerald-400 bg-clip-text text-transparent">Lotería DeFi</span><br>
+          Más Transparente
+        </h2>
+
+        <p class="text-xl text-slate-400 max-w-3xl mx-auto mb-12 leading-relaxed">
+          Rendimientos reales en USDT y WBTC. Selección de ganador mediante Chainlink VRF. 
+          100% del capital distribuido automáticamente. Código auditado y verificable on-chain.
         </p>
+
+        <!-- Dual CTA -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+          <button onclick="openWalletSelectModal()" class="btn-primary px-8 py-4 rounded-xl text-base font-semibold">
+            Conectar Wallet &rarr;
+          </button>
+          <button class="btn-outline px-8 py-4 rounded-xl text-base font-semibold flex items-center gap-2 justify-center">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+            Pagar con Tarjeta (Próximamente)
+          </button>
+        </div>
+
+        <!-- KPI Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-8">
+          <div class="glass rounded-2xl p-5 text-center">
+            <p class="text-3xl font-bold text-white font-display" id="hero-tvl">$0</p>
+            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">TVL On-chain</p>
+          </div>
+          <div class="glass rounded-2xl p-5 text-center">
+            <p class="text-3xl font-bold text-emerald-400 font-display" id="hero-rounds">0</p>
+            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Rondas Completadas</p>
+          </div>
+          <div class="glass rounded-2xl p-5 text-center">
+            <p class="text-3xl font-bold text-blue-400 font-display">100%</p>
+            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Capital Distribuido</p>
+          </div>
+          <div class="glass rounded-2xl p-5 text-center">
+            <p class="text-3xl font-bold text-amber-400 font-display">6</p>
+            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Productos Nexum</p>
+          </div>
+        </div>
+
+        <!-- Badge -->
+        <div class="badge-wrap">
+          <img class="nexalo-badge" src="./img/nexalo-badge.png" alt="NEXALO Protocol Badge"/>
+        </div>
+      </div>
+    </section>
+
+    <!-- Infografía Interactiva: Cómo Funciona -->
+    <section class="py-20 px-6 bg-gradient-to-b from-transparent to-blue-950/10">
+      <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-16">
+          <p class="text-blue-400 font-semibold text-sm uppercase tracking-widest mb-3">Protocolo Autónomo</p>
+          <h2 class="font-display text-4xl md:text-5xl font-bold text-white mb-4">¿Cómo funciona Nexalo?</h2>
+          <p class="text-slate-400 text-lg max-w-2xl mx-auto">Un protocolo DeFi sin operadores humanos. El smart contract es la única autoridad.</p>
+        </div>
+
+        <!-- Step infographic -->
+        <div class="grid md:grid-cols-4 gap-6 mb-16">
+          <div class="glass rounded-2xl p-6 text-center card-hover relative">
+            <div class="absolute -top-3 -left-3 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">1</div>
+            <div class="w-14 h-14 rounded-2xl bg-blue-500/15 flex items-center justify-center mx-auto mb-4">
+              <svg width="28" height="28" fill="none" stroke="#3B82F6" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+            </div>
+            <h3 class="font-semibold text-white mb-2">Compras tu número</h3>
+            <p class="text-slate-400 text-sm">Pagas con USDT. Eliges tus números o los tomas aleatorios. Sin registro, solo tu wallet.</p>
+          </div>
+
+          <div class="glass rounded-2xl p-6 text-center card-hover relative">
+            <div class="absolute -top-3 -left-3 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">2</div>
+            <div class="w-14 h-14 rounded-2xl bg-emerald-500/15 flex items-center justify-center mx-auto mb-4">
+              <svg width="28" height="28" fill="none" stroke="#10B981" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <h3 class="font-semibold text-white mb-2">Smart Contract distribuye</h3>
+            <p class="text-slate-400 text-sm">El 100% del capital se divide automáticamente: premio, yield, staking, filantropía.</p>
+          </div>
+
+          <div class="glass rounded-2xl p-6 text-center card-hover relative">
+            <div class="absolute -top-3 -left-3 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">3</div>
+            <div class="w-14 h-14 rounded-2xl bg-purple-500/15 flex items-center justify-center mx-auto mb-4">
+              <svg width="28" height="28" fill="none" stroke="#A78BFA" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            </div>
+            <h3 class="font-semibold text-white mb-2">Chainlink VRF elige</h3>
+            <p class="text-slate-400 text-sm">Randomness verificable e impredecible. Nadie, ni el equipo, puede influir en el resultado.</p>
+          </div>
+
+          <div class="glass rounded-2xl p-6 text-center card-hover relative">
+            <div class="absolute -top-3 -left-3 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">4</div>
+            <div class="w-14 h-14 rounded-2xl bg-amber-500/15 flex items-center justify-center mx-auto mb-4">
+              <svg width="28" height="28" fill="none" stroke="#F59E0B" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            </div>
+            <h3 class="font-semibold text-white mb-2">Reclamar en 1 clic</h3>
+            <p class="text-slate-400 text-sm">El premio queda acreditado on-chain. El ganador puede reclamar en cualquier momento.</p>
+          </div>
+        </div>
+
+        <!-- Donut chart infographic: distribución de fondos -->
+        <div class="glass rounded-3xl p-8 md:p-12">
+          <div class="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <p class="text-blue-400 font-semibold text-sm uppercase tracking-widest mb-3">Transparencia Total</p>
+              <h3 class="font-display text-3xl font-bold text-white mb-4">Distribución de Fondos</h3>
+              <p class="text-slate-400 mb-8">Cada USDT que entra al protocolo se divide automáticamente. Verificable en BSCScan.</p>
+
+              <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-blue-500"></span><span class="text-slate-300 font-medium">Premio Principal</span></div>
+                  <span class="text-white font-bold">50%</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-amber-400"></span><span class="text-slate-300 font-medium">Tesorer&iacute;a BTC (Yield)</span></div>
+                  <span class="text-white font-bold">10%</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-purple-400"></span><span class="text-slate-300 font-medium">Recompensas Instant&aacute;neas</span></div>
+                  <span class="text-white font-bold">10%</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-emerald-400"></span><span class="text-slate-300 font-medium">Red de Referidos (3 niveles)</span></div>
+                  <span class="text-white font-bold">10%</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-rose-400"></span><span class="text-slate-300 font-medium">Embajadores</span></div>
+                  <span class="text-white font-bold">5%</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-slate-400"></span><span class="text-slate-300 font-medium">Operaciones &amp; Auditor&iacute;a</span></div>
+                  <span class="text-white font-bold">15%</span>
+                </div>
+                <div class="border-t border-white/8 pt-4 flex items-center justify-between">
+                  <span class="text-slate-300 font-semibold">Total Distribuido</span>
+                  <span class="text-emerald-400 font-bold text-xl">100%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Interactive SVG Donut -->
+            <div class="flex flex-col items-center">
+              <div class="relative">
+                <svg width="280" height="280" viewBox="0 0 280 280" id="donut-chart">
+                  <!-- Donut segments: circumference of r=100 → 628.3 -->
+                  <circle cx="140" cy="140" r="100" fill="none" stroke="#3B82F6" stroke-width="36"
+                    stroke-dasharray="314.2 628.3" stroke-dashoffset="0" transform="rotate(-90 140 140)" class="donut-segment"/>
+                  <circle cx="140" cy="140" r="100" fill="none" stroke="#F59E0B" stroke-width="36"
+                    stroke-dasharray="62.8 628.3" stroke-dashoffset="-314.2" transform="rotate(-90 140 140)" class="donut-segment"/>
+                  <circle cx="140" cy="140" r="100" fill="none" stroke="#A78BFA" stroke-width="36"
+                    stroke-dasharray="62.8 628.3" stroke-dashoffset="-377" transform="rotate(-90 140 140)" class="donut-segment"/>
+                  <circle cx="140" cy="140" r="100" fill="none" stroke="#10B981" stroke-width="36"
+                    stroke-dasharray="62.8 628.3" stroke-dashoffset="-439.8" transform="rotate(-90 140 140)" class="donut-segment"/>
+                  <circle cx="140" cy="140" r="100" fill="none" stroke="#FB7185" stroke-width="36"
+                    stroke-dasharray="31.4 628.3" stroke-dashoffset="-502.6" transform="rotate(-90 140 140)" class="donut-segment"/>
+                  <circle cx="140" cy="140" r="100" fill="none" stroke="#64748B" stroke-width="36"
+                    stroke-dasharray="94.2 628.3" stroke-dashoffset="-534" transform="rotate(-90 140 140)" class="donut-segment"/>
+                  <!-- Center text -->
+                  <text x="140" y="133" text-anchor="middle" fill="white" font-size="28" font-weight="800" font-family="Inter">100%</text>
+                  <text x="140" y="157" text-anchor="middle" fill="#64748B" font-size="12" font-family="Inter">Distribuido</text>
+                </svg>
+              </div>
+              <p class="text-slate-500 text-sm mt-4 text-center">Verificado en BSCScan &mdash; Inmutable &mdash; Sin admin keys</p>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
