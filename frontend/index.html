@@ -310,9 +310,10 @@
         <a href="#" onclick="showSection('home'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Nexum</a>
         <a href="#" onclick="showSection('account'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Mi Cuenta</a>
         <a href="#" onclick="showSection('ambassadors'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Embajadores</a>
+        <a href="#" onclick="showSection('treasury'); return false;" class="text-[#00FF41] hover:text-white transition font-black neon-text">Tesorería DeFi</a>
+        <a href="#" onclick="showSection('impact'); return false;" class="text-blue-400 hover:text-white transition font-black">Impacto</a>
         <a href="#" onclick="showSection('staking'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Staking</a>
         <a href="#" onclick="showSection('videos'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Videos</a>
-        <a href="#" onclick="showSection('tokenomics'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Tokenomics</a>
         <a href="#" onclick="showSection('faq'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">FAQ</a>
       </nav>
 
@@ -345,9 +346,10 @@
         <a href="#" onclick="showSection('home'); closeMobileMenu(); return false;" class="text-gray-200 hover:text-[#00FF41] font-semibold">Nexum</a>
         <a href="#" onclick="showSection('account'); closeMobileMenu(); return false;" class="text-gray-200 hover:text-[#00FF41] font-semibold">Mi Cuenta</a>
         <a href="#" onclick="showSection('ambassadors'); closeMobileMenu(); return false;" class="text-gray-200 hover:text-[#00FF41] font-semibold">Embajadores</a>
+        <a href="#" onclick="showSection('treasury'); closeMobileMenu(); return false;" class="text-[#00FF41] font-black">Tesorería DeFi</a>
+        <a href="#" onclick="showSection('impact'); closeMobileMenu(); return false;" class="text-blue-400 font-black">Impacto Global</a>
         <a href="#" onclick="showSection('staking'); closeMobileMenu(); return false;" class="text-gray-200 hover:text-[#00FF41] font-semibold">Staking</a>
         <a href="#" onclick="showSection('videos'); closeMobileMenu(); return false;" class="text-gray-200 hover:text-[#00FF41] font-semibold">Videos</a>
-        <a href="#" onclick="showSection('tokenomics'); closeMobileMenu(); return false;" class="text-gray-200 hover:text-[#00FF41] font-semibold">Tokenomics</a>
         <a href="#" onclick="showSection('faq'); closeMobileMenu(); return false;" class="text-gray-200 hover:text-[#00FF41] font-semibold">FAQ 💬</a>
       </div>
     </div>
@@ -886,6 +888,135 @@
           </div>
         </div>
 
+      </div>
+    </section>
+  </div>
+
+  <!-- TREASURY & YIELD SECTION -->
+  <div id="treasury-section" class="section">
+    <section class="py-24 px-6">
+      <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-16">
+          <h2 class="text-5xl font-black font-mono neon-text text-[#00FF41] mb-6">TESORERÍA DEFI & YIELD</h2>
+          <p class="text-2xl text-gray-400">Generación de rendimientos pasivos vía AAVE y AIYield</p>
+        </div>
+
+        <!-- TVL and APY Stats -->
+        <div class="grid md:grid-cols-3 gap-6 mb-12">
+          <div class="bg-black/60 backdrop-blur-xl border border-[#00FF41]/40 rounded-2xl p-6 text-center shadow-lg shadow-[#00FF41]/10">
+            <p class="text-gray-400 font-mono text-sm mb-2">TOTAL VALUE LOCKED (TVL)</p>
+            <p class="text-4xl font-black text-white">$<span id="tvl-amount">1,245,600</span></p>
+            <p class="text-[#00FF41] text-xs mt-2">+12% este mes</p>
+          </div>
+          <div class="bg-gradient-to-b from-[#00FF41]/20 to-black/60 border border-[#00FF41] rounded-2xl p-6 text-center shadow-lg shadow-[#00FF41]/20 transform scale-105">
+            <p class="text-[#00FF41] font-mono text-sm mb-2 font-bold">APY ESTIMADO</p>
+            <p class="text-5xl font-black text-white neon-text">8.5%</p>
+            <p class="text-[#00FF41] text-xs mt-2">Compuesto Diariamente</p>
+          </div>
+          <div class="bg-black/60 backdrop-blur-xl border border-[#00FF41]/40 rounded-2xl p-6 text-center shadow-lg shadow-[#00FF41]/10">
+            <p class="text-gray-400 font-mono text-sm mb-2">RENDIMIENTO GENERADO</p>
+            <p class="text-4xl font-black text-white">$<span id="yield-generated">14,230</span></p>
+            <p class="text-[#00FF41] text-xs mt-2">Distribuido a Stakers</p>
+          </div>
+        </div>
+
+        <!-- Integration Modules -->
+        <div class="grid md:grid-cols-2 gap-8">
+          <!-- Aave Module -->
+          <div class="bg-gradient-to-br from-[#B6509E]/20 to-black/80 border border-[#B6509E] rounded-2xl p-8 hover:scale-105 transition">
+            <div class="flex justify-between items-start mb-6">
+              <div>
+                <h3 class="text-2xl font-black text-white mb-1">Aave v3 Integration</h3>
+                <p class="text-[#B6509E] text-sm font-bold">Lending Protocol</p>
+              </div>
+              <div class="bg-[#B6509E] text-white px-3 py-1 rounded-full text-xs font-black">ACTIVO</div>
+            </div>
+            <p class="text-gray-300 text-sm mb-6 leading-relaxed">
+              El 40% de la tesorería de NEXALO se deposita automáticamente en Aave para generar rendimientos estables sobre USDC/USDT.
+            </p>
+            <div class="space-y-3">
+              <div class="flex justify-between border-b border-gray-700 pb-2">
+                <span class="text-gray-400">Capital Asignado</span>
+                <span class="text-white font-bold">$498,240</span>
+              </div>
+              <div class="flex justify-between border-b border-gray-700 pb-2">
+                <span class="text-gray-400">Current APY</span>
+                <span class="text-[#B6509E] font-bold">4.2%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- AIYield Module -->
+          <div class="bg-gradient-to-br from-[#00F3FF]/20 to-black/80 border border-[#00F3FF] rounded-2xl p-8 hover:scale-105 transition">
+            <div class="flex justify-between items-start mb-6">
+              <div>
+                <h3 class="text-2xl font-black text-white mb-1">AIYield Optimizer</h3>
+                <p class="text-[#00F3FF] text-sm font-bold">Algorithmic Farming</p>
+              </div>
+              <div class="bg-[#00F3FF] text-black px-3 py-1 rounded-full text-xs font-black">ACTIVO</div>
+            </div>
+            <p class="text-gray-300 text-sm mb-6 leading-relaxed">
+              El 60% de la tesorería utiliza AIYield para encontrar las pools de liquidez más eficientes en BSC, rebalanceando automáticamente para maximizar retornos minimizando el Impermanent Loss.
+            </p>
+            <div class="space-y-3">
+              <div class="flex justify-between border-b border-gray-700 pb-2">
+                <span class="text-gray-400">Capital Asignado</span>
+                <span class="text-white font-bold">$747,360</span>
+              </div>
+              <div class="flex justify-between border-b border-gray-700 pb-2">
+                <span class="text-gray-400">Current APY</span>
+                <span class="text-[#00F3FF] font-bold">11.3%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- IMPACTO GLOBAL SECTION -->
+  <div id="impact-section" class="section">
+    <section class="py-24 px-6 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]">
+      <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-16">
+          <h2 class="text-5xl font-black font-mono neon-text text-blue-400 mb-6">IMPACTO GLOBAL Y FILANTROPÍA</h2>
+          <p class="text-2xl text-gray-300">Nexalo es más que un protocolo. Es un motor de cambio.</p>
+        </div>
+
+        <div class="bg-black/70 backdrop-blur-xl border border-blue-500/50 p-10 rounded-3xl mb-12 relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
+          <div class="grid md:grid-cols-2 gap-12 items-center relative z-10">
+            <div>
+              <h3 class="text-3xl font-black text-white mb-4">La DAO de Donaciones <span class="text-blue-400">(DonationVault)</span></h3>
+              <p class="text-gray-300 mb-6 text-lg leading-relaxed">
+                El ecosistema Nexalo reserva automáticamente una fracción de sus rendimientos de tesorería para iniciativas filantrópicas globales. 
+                Los holders de NXL (mediante Staking) tienen derecho a proponer y votar qué causas de la vida real recibirán fondos.
+              </p>
+              <ul class="space-y-4">
+                <li class="flex items-start">
+                  <span class="text-blue-400 text-xl mr-3">💧</span>
+                  <span class="text-gray-200">Acceso a agua potable y saneamiento en zonas rurales.</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-blue-400 text-xl mr-3">📚</span>
+                  <span class="text-gray-200">Educación tecnológica y becas en países en vías de desarrollo.</span>
+                </li>
+                <li class="flex items-start">
+                  <span class="text-blue-400 text-xl mr-3">🌱</span>
+                  <span class="text-gray-200">Iniciativas de reforestación y reducción de huella de carbono.</span>
+                </li>
+              </ul>
+            </div>
+            <div class="bg-blue-900/20 border border-blue-500/30 p-8 rounded-2xl text-center">
+              <p class="text-blue-400 font-mono text-sm mb-2">FONDOS ACUMULADOS PARA DONACIÓN</p>
+              <p class="text-6xl font-black text-white mb-4">$<span id="donation-funds">25,840</span></p>
+              <p class="text-gray-400 text-sm mb-6">A la espera de la próxima votación de la DAO</p>
+              <button class="bg-blue-500 text-white font-black px-8 py-3 rounded-xl hover:bg-blue-400 transition w-full shadow-lg shadow-blue-500/20">
+                VER PROPUESTAS ACTIVAS
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </div>
