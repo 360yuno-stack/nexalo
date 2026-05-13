@@ -309,6 +309,7 @@
       <nav class="hidden md:flex space-x-6 text-base">
         <a href="#" onclick="showSection('home'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Nexum</a>
         <a href="#" onclick="showSection('account'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Mi Cuenta</a>
+        <a href="#" onclick="showSection('investor'); return false;" class="text-yellow-400 hover:text-white transition font-black neon-text">Inversores</a>
         <a href="#" onclick="showSection('ambassadors'); return false;" class="text-gray-300 hover:text-[#00FF41] transition font-semibold">Embajadores</a>
         <a href="#" onclick="showSection('treasury'); return false;" class="text-[#00FF41] hover:text-white transition font-black neon-text">Tesorería DeFi</a>
         <a href="#" onclick="showSection('impact'); return false;" class="text-blue-400 hover:text-white transition font-black">Impacto</a>
@@ -345,6 +346,7 @@
       <div class="px-6 py-4 flex flex-col gap-3 text-base">
         <a href="#" onclick="showSection('home'); closeMobileMenu(); return false;" class="text-gray-200 hover:text-[#00FF41] font-semibold">Nexum</a>
         <a href="#" onclick="showSection('account'); closeMobileMenu(); return false;" class="text-gray-200 hover:text-[#00FF41] font-semibold">Mi Cuenta</a>
+        <a href="#" onclick="showSection('investor'); closeMobileMenu(); return false;" class="text-yellow-400 font-black">Inversores</a>
         <a href="#" onclick="showSection('ambassadors'); closeMobileMenu(); return false;" class="text-gray-200 hover:text-[#00FF41] font-semibold">Embajadores</a>
         <a href="#" onclick="showSection('treasury'); closeMobileMenu(); return false;" class="text-[#00FF41] font-black">Tesorería DeFi</a>
         <a href="#" onclick="showSection('impact'); closeMobileMenu(); return false;" class="text-blue-400 font-black">Impacto Global</a>
@@ -678,6 +680,92 @@
           <div id="my-tickets" class="space-y-4">
             <p class="text-gray-400 text-center py-8">Conecta tu wallet para ver tus números</p>
           </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- INVESTOR DASHBOARD -->
+  <div id="investor-section" class="section">
+    <section class="py-24 px-6">
+      <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-16">
+          <h2 class="text-5xl font-black font-mono text-yellow-400 mb-6">DASHBOARD DE INVERSOR</h2>
+          <p class="text-2xl text-gray-300">Aporta liquidez a las recompensas instantáneas y gana retornos en USDT</p>
+        </div>
+
+        <div class="bg-yellow-900/10 border-2 border-yellow-500/50 p-8 rounded-3xl mb-12">
+          <h3 class="text-2xl font-black text-yellow-400 mb-4">🏦 ¿Cómo funciona?</h3>
+          <p class="text-gray-300 mb-6 leading-relaxed">
+            Las recompensas instantáneas de Nexalo requieren liquidez inicial. Como inversor, puedes aportar USDT a la pool de cualquier Nexum. 
+            Cuando la ronda finaliza, el Smart Contract te devuelve tu inversión principal más un % de ganancias proveniente del Liquidity Profit Pool, directo a tu wallet.
+          </p>
+          
+          <div class="grid md:grid-cols-2 gap-8 mt-8">
+            <!-- Pool FLASH -->
+            <div class="bg-black/80 border border-gray-700 rounded-xl p-6">
+              <div class="flex justify-between items-center mb-4">
+                <h4 class="text-xl font-black text-[#00FF41]">⚡ FLASH Pool</h4>
+                <span class="text-xs font-mono bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded">Ronda Activa</span>
+              </div>
+              <div class="mb-4">
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="text-gray-400">Liquidez Fondeada</span>
+                  <span class="text-white font-bold">$<span class="investor-funded">0.00</span> / $<span class="investor-target">100.00</span></span>
+                </div>
+                <div class="w-full bg-gray-800 rounded-full h-2">
+                  <div class="bg-yellow-400 h-2 rounded-full" style="width: 0%"></div>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <input type="number" placeholder="USDT" class="flex-1 bg-black border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                <button class="bg-yellow-400 text-black font-black px-4 py-2 rounded text-sm hover:scale-105 transition">APORTAR</button>
+              </div>
+            </div>
+
+            <!-- Pool ORIGINAL -->
+            <div class="bg-black/80 border border-gray-700 rounded-xl p-6">
+              <div class="flex justify-between items-center mb-4">
+                <h4 class="text-xl font-black text-yellow-400">🌟 ORIGINAL Pool</h4>
+                <span class="text-xs font-mono bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded">Ronda Activa</span>
+              </div>
+              <div class="mb-4">
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="text-gray-400">Liquidez Fondeada</span>
+                  <span class="text-white font-bold">$<span class="investor-funded">0.00</span> / $<span class="investor-target">1,000.00</span></span>
+                </div>
+                <div class="w-full bg-gray-800 rounded-full h-2">
+                  <div class="bg-yellow-400 h-2 rounded-full" style="width: 0%"></div>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <input type="number" placeholder="USDT" class="flex-1 bg-black border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                <button class="bg-yellow-400 text-black font-black px-4 py-2 rounded text-sm hover:scale-105 transition">APORTAR</button>
+              </div>
+            </div>
+            
+             <!-- Pool PREMIUM -->
+            <div class="bg-black/80 border border-gray-700 rounded-xl p-6">
+              <div class="flex justify-between items-center mb-4">
+                <h4 class="text-xl font-black text-purple-400">💎 PREMIUM Pool</h4>
+                <span class="text-xs font-mono bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded">Ronda Activa</span>
+              </div>
+              <div class="mb-4">
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="text-gray-400">Liquidez Fondeada</span>
+                  <span class="text-white font-bold">$<span class="investor-funded">0.00</span> / $<span class="investor-target">2,000.00</span></span>
+                </div>
+                <div class="w-full bg-gray-800 rounded-full h-2">
+                  <div class="bg-yellow-400 h-2 rounded-full" style="width: 0%"></div>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <input type="number" placeholder="USDT" class="flex-1 bg-black border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                <button class="bg-yellow-400 text-black font-black px-4 py-2 rounded text-sm hover:scale-105 transition">APORTAR</button>
+              </div>
+            </div>
+          </div>
+          <p class="text-xs text-gray-500 mt-6 text-center">Para aportar liquidez debes aprobar tus USDT primero. Todo el proceso es on-chain mediante el contrato NexumManager.</p>
         </div>
       </div>
     </section>
