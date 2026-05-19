@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Whitepaper — NEXALO DeFi Protocol</title>
+  <meta name="description" content="Qué es NEXALO, por qué existe y por qué puedes confiar en él. Documentación completa del protocolo DeFi autónomo de lotería en BNB Smart Chain." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@700;800;900&family=JetBrains+Mono&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #060810; color: #e2e8f0; min-height: 100vh; }
+    .font-display { font-family: 'Syne', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .glass { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); backdrop-filter: blur(12px); }
+
+    /* Nav */
+    .sticky-nav { position: sticky; top: 0; z-index: 50; background: rgba(6,8,16,0.97); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+    /* Sections */
+    section-divider { border-top: 1px solid rgba(255,255,255,0.05); }
+
+    /* Code inline */
+    code { background: rgba(255,255,255,0.06); color: #93c5fd; padding: 2px 7px; border-radius: 5px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; }
+
+    /* Prose */
+    .prose p { color: #94a3b8; line-height: 1.8; font-size: 1.05rem; margin-bottom: 1.2rem; }
+    .prose p strong { color: #f1f5f9; }
+    .prose h2 { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 800; color: white; margin-bottom: 1.2rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.06); }
+
+    /* TOC */
+    .toc a { color: #94a3b8; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; padding: 4px 0; transition: color 0.2s; }
+    .toc a:hover { color: #60a5fa; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #060810; }
+    ::-webkit-scrollbar-thumb { background: rgba(59,130,246,0.3); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <div class="sticky-nav">
+    <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-3 text-slate-400 hover:text-white transition-colors">
+        <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center">
+          <span class="font-display font-black text-white text-sm">N</span>
+        </div>
+        <span class="text-sm font-medium">← Volver al Protocolo</span>
+      </a>
+      <span class="text-xs text-slate-600 font-mono">Whitepaper v1.0 — Mayo 2026</span>
+    </div>
+  </div>
+
+  <div class="max-w-4xl mx-auto px-6 py-20">
+
+    <!-- Título -->
+    <header class="text-center mb-20">
+      <div class="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-1.5 mb-8">
+        <span class="w-2 h-2 rounded-full bg-blue-400 inline-block" style="animation:pulse 2s infinite"></span>
+        <span class="text-blue-400 font-semibold text-sm uppercase tracking-widest">Documentación Oficial del Protocolo</span>
+      </div>
+      <h1 class="font-display text-6xl md:text-7xl font-black text-white mb-4">NEXALO</h1>
+      <p class="text-xl text-slate-300 font-medium mb-3">El Primer Protocolo de Lotería DeFi Completamente Autónomo</p>
+      <p class="text-slate-500 text-sm">BNB Smart Chain · Versión 1.0 · Mayo 2026</p>
+    </header>
+
+    <!-- Índice -->
+    <div class="glass rounded-2xl p-7 mb-16">
+      <p class="text-xs text-slate-500 uppercase tracking-widest mb-5 font-semibold">Índice de Contenidos</p>
+      <div class="grid md:grid-cols-2 gap-1 toc">
+        <a href="#s1"><span class="text-slate-600">→</span> 1. El Problema: Las Loterías Están Rotas</a>
+        <a href="#s2"><span class="text-slate-600">→</span> 2. La Solución: El Contrato Como Única Autoridad</a>
+        <a href="#s3"><span class="text-slate-600">→</span> 3. Cómo Funciona: El Ciclo Completo</a>
+        <a href="#s4"><span class="text-slate-600">→</span> 4. Por Qué Puedes Confiar: La Autonomía</a>
+        <a href="#s5"><span class="text-slate-600">→</span> 5. El Ecosistema: Más Que Una Lotería</a>
+        <a href="#s6"><span class="text-slate-600">→</span> 6. Ventaja Frente a los Competidores</a>
+        <a href="#s7"><span class="text-slate-600">→</span> 7. Riesgos y Limitaciones</a>
+        <a href="#s8"><span class="text-slate-600">→</span> 8. Responsabilidad Fiscal</a>
+        <a href="#s9"><span class="text-slate-600">→</span> 9. La Frontera del Fiat</a>
+        <a href="#s10"><span class="text-slate-600">→</span> 10. La Visión: Un Protocolo Para Siempre</a>
+      </div>
+    </div>
+
+    <!-- Secciones -->
+    <div class="prose space-y-16">
+
+      <section id="s1">
+        <h2>1. El Problema: Por Qué las Loterías Tradicionales Están Rotas</h2>
+        <p>Las loterías son el juego de azar más antiguo de la humanidad. Cada año, el mundo gasta más de 350 mil millones de dólares en ellas. Sin embargo, la enorme mayoría de ese dinero no regresa a los jugadores — lo absorbe el estado, la empresa operadora, los intermediarios y los costes administrativos. En la lotería nacional promedio, el jugador recupera entre el 40% y el 55% del dinero apostado en forma de premios. El resto desaparece en una caja negra.</p>
+        <p>El problema no es solo económico. Es de confianza. ¿Cómo sabes que el número ganador no estaba elegido de antemano? ¿Cómo verificas que el premio realmente existe? ¿A quién reclamas si el sistema falla? En las loterías centralizadas, la respuesta a estas preguntas es siempre la misma: confía en nosotros.</p>
+        <p>NEXALO nació para eliminar esa necesidad de confianza. No mejorando el sistema existente — sino reemplazándolo por completo con código que cualquiera puede leer, verificar y auditar.</p>
+      </section>
+
+      <section id="s2">
+        <h2>2. La Solución: Un Contrato Inteligente Que Es La Única Autoridad</h2>
+        <p>NEXALO es un protocolo de lotería que vive en BNB Smart Chain, una blockchain pública. Sus reglas están escritas en código Solidity y publicadas permanentemente en la red. No hay un servidor central que se pueda apagar. No hay un administrador que pueda cambiar las probabilidades. No hay una empresa que pueda quedarse con los fondos.</p>
+        <p>Cuando alguien compra un ticket en NEXALO, su USDT va directamente al smart contract. El contrato — de forma automática, en el mismo bloque de la transacción — divide ese dinero según reglas fijas e inmutables: el 50% al premio, el 10% al sistema de inversores, el 10% a staking y rendimiento en Bitcoin, el 10% a los referidos, el 5% a embajadores, y el 15% a operaciones. Esto sucede sin que ningún humano toque un botón.</p>
+        <p>El ganador se selecciona mediante Chainlink VRF — una tecnología de oráculo que genera números aleatorios con pruebas criptográficas verificables. Esto significa que cualquier persona, en cualquier momento, puede verificar matemáticamente que el número ganador fue generado de forma justa. No por NEXALO. No por Chainlink. Sino por la matemática.</p>
+      </section>
+
+      <section id="s3">
+        <h2>3. Cómo Funciona: El Ciclo Completo</h2>
+        <p>NEXALO ofrece seis niveles de participación llamados Nexums — desde tickets de $1 USDT hasta tickets de $200 USDT, con premios que van desde $500 hasta $1,000,000 de dólares. Cada Nexum es una ronda independiente con su propio pool de premios.</p>
+        <p>El proceso es simple: un usuario conecta su wallet de criptomonedas, elige un Nexum, selecciona sus números y confirma la transacción. En ese instante, su USDT se distribuye automáticamente. Recibe tokens NXL como recompensa por participar. Y queda registrado en la blockchain como propietario de esos números para esa ronda.</p>
+        <p>Cuando todos los tickets de una ronda se venden, el contrato solicita automáticamente un número aleatorio a Chainlink. Segundos después, el ganador queda registrado on-chain. Su premio está acreditado en su saldo, listo para reclamar con un solo clic — en cualquier momento, sin fecha de caducidad. El dinero no va a ningún lado: está en el contrato, esperando al ganador, para siempre si es necesario.</p>
+      </section>
+
+      <section id="s4">
+        <h2>4. Por Qué Puedes Confiar: La Autonomía Como Garantía</h2>
+        <p>La pregunta más razonable que puede hacer un escéptico es: ¿y si el equipo de NEXALO decide un día cambiar las reglas, pausar el contrato o llevarse los fondos?</p>
+        <p>La respuesta está en el código: no pueden. El protocolo tiene una función llamada <code>finalizeAutonomy()</code> que, cuando se ejecuta, renuncia permanentemente a todo control administrativo. Tras su activación, nadie en el mundo — ni el equipo fundador, ni ningún contrato, ni ningún hacker — puede modificar la distribución de fondos, cambiar el oráculo de aleatoriedad, pausar el protocolo indefinidamente ni retirar los fondos del jackpot pool.</p>
+        <p>El código es público en BSCScan. Cualquier desarrollador puede leerlo, compilarlo y verificar que hace exactamente lo que dice. Cualquier usuario puede ver cada transacción, cada distribución de fondos, cada selección de ganador. La transparencia no es una promesa — es la naturaleza física del sistema.</p>
+      </section>
+
+      <section id="s5">
+        <h2>5. El Ecosistema: Más Que Una Lotería</h2>
+        <p>NEXALO no es solo un sistema de premios. Es un ecosistema financiero completo construido alrededor del juego.</p>
+        <p><strong>Inversores:</strong> Cualquier persona puede proveer liquidez USDT a las rondas activas y recibir un rendimiento del 3% sobre su capital por cada ronda completada. Es un retorno fijo, predecible y verificable on-chain — sin las variables impredecibles de los mercados de criptomonedas típicos.</p>
+        <p><strong>Referidos de tres niveles:</strong> Al compartir tu enlace único, ganas el 5% directo de cada compra de tu referido. Sus referidos te dan el 3%, y los de ellos el 2%. Las comisiones se pagan en el momento exacto de la compra, automáticamente, en USDT.</p>
+        <p><strong>Tesorería Bitcoin:</strong> El 10% de cada ticket alimenta un fondo que compra Bitcoin (WBTC) en el mercado. Una vez al año, los poseedores de tokens NXL pueden intercambiar sus tokens por WBTC acumulado — creando un vínculo directo entre la actividad del protocolo y el activo digital más sólido del mundo.</p>
+        <p><strong>Token NXL:</strong> Cada compra de ticket genera automáticamente tokens NXL para el comprador, sin coste adicional. El supply máximo es de un millón de tokens — fijo, sin posibilidad de crear más. A medida que el protocolo crece y más NXL se quema en la redención por WBTC, la escasez aumenta.</p>
+      </section>
+
+      <section id="s6">
+        <h2>6. Ventaja Frente a los Competidores</h2>
+        <p>El mercado de loterías descentralizadas existe, pero está fragmentado e incompleto. PoolTogether, el líder actual, usa un modelo sin pérdidas donde los depósitos generan rendimiento y ese rendimiento es el premio — los jackpots son pequeños ($100-$500). PancakeSwap Lottery opera con su token propio CAKE y distribuye solo el 40% de los fondos en premios. Ninguno combina jackpots grandes, inversores, referidos, treasury de Bitcoin y token deflacionario en un solo contrato inmutable.</p>
+        <p>NEXALO distribuye el <strong>96%</strong> de cada USDT al ecosistema — la tasa más alta del mercado. El 4% restante cubre operaciones y desarrollo. Frente al 45-60% que retienen las loterías tradicionales, la diferencia es estructural e irreversible por diseño.</p>
+      </section>
+
+      <section id="s7">
+        <h2>7. Riesgos y Limitaciones: Lo Que Necesitas Saber</h2>
+        <p>La transparencia de NEXALO no se detiene en el código — también incluye ser honestos sobre sus limitaciones. Cualquier persona que participe en el protocolo debe conocer los siguientes puntos antes de hacerlo.</p>
+        <p><strong>Código como único contrato:</strong> El smart contract es el árbitro definitivo. Aunque ha sido revisado exhaustivamente con 73 tests automatizados y una auditoría externa en proceso, ningún software es absolutamente infalible. Participar con fondos que no puedas permitirte perder es una decisión personal — no una que NEXALO pueda tomar por ti.</p>
+        <p><strong>Valor del token NXL:</strong> El precio de NXL lo determina el mercado libre, no el protocolo. Puede subir, bajar o llegar a cero en función de la oferta y la demanda. Recibir NXL al comprar tickets es una recompensa adicional — no una garantía de valor.</p>
+        <p><strong>Marco regulatorio:</strong> Las loterías descentralizadas operan en un espacio legal que evoluciona rápidamente y varía por país. En algunas jurisdicciones, el acceso puede estar restringido o sujeto a regulaciones específicas. Es responsabilidad del usuario conocer y cumplir la legislación vigente en su territorio.</p>
+        <p><strong>Obligaciones fiscales:</strong> Los premios obtenidos en NEXALO son ingresos digitales sujetos a la legislación fiscal de cada país. NEXALO no tiene capacidad legal ni técnica para retener impuestos, emitir declaraciones fiscales ni actuar como agente tributario. Cada usuario es el único responsable de declarar y liquidar los impuestos que correspondan en su país de residencia fiscal.</p>
+      </section>
+
+      <section id="s8">
+        <h2>8. Responsabilidad Fiscal: El Protocolo No Retiene Impuestos</h2>
+        <p>Este punto merece su propio espacio porque afecta directamente a cualquier persona que gane un premio en NEXALO, y la claridad aquí es no negociable.</p>
+        <p>Cuando el smart contract acredita un premio en el saldo de un ganador, la transacción es completamente pública y permanente en la blockchain. NEXALO no realiza ninguna retención fiscal, no emite certificados de ganancias, no notifica a ninguna autoridad tributaria y no tiene ninguna obligación legal de hacerlo — porque no es una empresa registrada. Es un protocolo de software autónomo desplegado en una red descentralizada global.</p>
+        <p><strong>Si ganas un premio en NEXALO, eres el único responsable de conocer las leyes fiscales de tu país y cumplir con ellas.</strong> En muchos países, los premios de lotería están sujetos a impuestos sobre la renta, ganancias de capital u otras figuras tributarias. En algunos, los activos digitales tienen un régimen fiscal específico. En otros, pueden aplicarse umbrales de declaración que no requieren pago inmediato pero sí obligación de reportar.</p>
+        <p>NEXALO no puede asesorarte sobre tu situación fiscal particular. Si tienes dudas sobre el tratamiento impositivo de tus ganancias, consulta a un asesor fiscal cualificado en tu jurisdicción antes de participar.</p>
+      </section>
+
+      <section id="s9">
+        <h2>9. La Frontera del Fiat: Honestidad Sobre un Límite Real</h2>
+        <p>Existe una pregunta que merece una respuesta directa: si NEXALO es autónomo, ¿cómo puede funcionar con pagos con tarjeta de crédito?</p>
+        <p>La respuesta es técnicamente precisa: la conversión de dinero tradicional (euros, dólares) a criptomonedas <strong>siempre requiere una entidad regulada por ley</strong>. En cualquier jurisdicción del mundo, transformar fiat en cripto implica cumplimiento KYC/AML — identificación del usuario, registro de la transacción, supervisión regulatoria. Esto no es una elección de diseño: es la ley.</p>
+        <p>Lo que NEXALO puede garantizar es que <strong>nunca es el intermediario de esos fondos</strong>. El proveedor de pago (Transak o Moonpay) recibe el pago con tarjeta, convierte a USDT y envía esos USDT directamente a la wallet del usuario. NEXALO no toca, no ve, no custodia ni un solo dólar en ese proceso. La cadena completa es: <code>Tarjeta → Transak (regulado) → Wallet del usuario → NexumManager (autónomo)</code>. NEXALO aparece solo en el último paso.</p>
+      </section>
+
+      <section id="s10">
+        <h2>10. La Visión: Un Protocolo Para Siempre</h2>
+        <p>La gran mayoría de los proyectos cripto dependen de un equipo que los mantenga activos. Si el equipo desaparece, el proyecto muere. NEXALO está diseñado para lo opuesto: una vez activada la autonomía, el protocolo funciona indefinidamente sin que nadie tenga que hacer nada.</p>
+        <p>Las rondas se completan solas. Los ganadores reciben sus premios. Los inversores acumulan rendimientos. Los referidos cobran sus comisiones. La tesorería compra Bitcoin. Todo esto ocurre en la blockchain, bloque a bloque, mientras la red de BNB Smart Chain siga existiendo.</p>
+        <p>Eso es NEXALO: no una empresa, no una promesa, no una hoja de ruta que depende de que alguien la ejecute. Es un conjunto de reglas matemáticas escritas en código, desplegadas en una red descentralizada global, que opera por su propio peso — como el Bitcoin opera por su propio peso desde 2009.</p>
+      </section>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-24 pt-10 border-t border-white/5 text-center space-y-4">
+      <p class="text-slate-500 text-sm max-w-xl mx-auto leading-relaxed">
+        Este documento es informativo y no constituye asesoramiento financiero, legal ni fiscal.
+        Los premios obtenidos en el protocolo pueden estar sujetos a obligaciones tributarias según la legislación de cada país.
+        Cada usuario es el único responsable del cumplimiento fiscal en su jurisdicción.
+        NEXALO no retiene impuestos ni actúa como agente tributario en ninguna circunstancia.
+      </p>
+      <div class="flex justify-center gap-8 mt-6">
+        <a href="index.html" class="text-blue-400 hover:text-blue-300 text-sm transition-colors">← Volver al Protocolo</a>
+        <a href="https://bscscan.com" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-white text-sm transition-colors">Verificar en BSCScan →</a>
+      </div>
+    </footer>
+
+  </div>
+
+  <style>
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  </style>
+</body>
+</html>

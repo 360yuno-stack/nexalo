@@ -427,6 +427,8 @@
         <a href="#" onclick="showSection('impact'); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition text-sm font-medium">Impacto</a>
         <a href="#" onclick="showSection('staking'); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition text-sm font-medium">Staking</a>
         <a href="#" onclick="showSection('faq'); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition text-sm font-medium">FAQ</a>
+        <a href="#" onclick="showSection('roadmap'); return false;" class="px-3 py-2 rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/5 transition text-sm font-semibold">Roadmap</a>
+        <a href="whitepaper.html" target="_blank" class="px-3 py-1.5 rounded-lg text-xs font-bold border border-blue-500/40 text-blue-400 hover:bg-blue-500/10 transition">Whitepaper</a>
       </nav>
 
       <!-- Right controls -->
@@ -463,6 +465,8 @@
         <a href="#" onclick="showSection('impact'); closeMobileMenu(); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:bg-white/5 font-medium">Impacto Global</a>
         <a href="#" onclick="showSection('staking'); closeMobileMenu(); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:bg-white/5 font-medium">Staking</a>
         <a href="#" onclick="showSection('faq'); closeMobileMenu(); return false;" class="px-3 py-2 rounded-lg text-slate-300 hover:bg-white/5 font-medium">FAQ</a>
+        <a href="#" onclick="showSection('roadmap'); closeMobileMenu(); return false;" class="px-3 py-2 rounded-lg text-emerald-400 hover:bg-emerald-400/5 font-semibold">Roadmap</a>
+        <a href="whitepaper.html" target="_blank" class="px-3 py-2 rounded-lg text-blue-400 hover:bg-blue-500/5 font-semibold">Whitepaper ↗</a>
       </div>
     </div>
   </header>
@@ -742,9 +746,16 @@
 
                   <!-- Manual Select -->
                   <button onclick="openModal(${p.id})"
-                    class="w-full py-3 rounded-xl text-sm font-semibold transition"
+                    class="w-full py-3 rounded-xl text-sm font-semibold transition mb-3"
                     style="background: linear-gradient(135deg, ${c.accent}22, ${c.accent}08); border: 1px solid ${c.accent}40; color: ${c.accent};">
                     Elegir Números Manualmente
+                  </button>
+
+                  <!-- Fiat Buy Button -->
+                  <button onclick="openFiatOnRamp(S.account, ${p.price})"
+                    class="w-full py-3 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2 border border-white/10 text-slate-300 hover:text-white hover:border-white/30 hover:bg-white/5">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h.01"/></svg>
+                    Comprar USDT con Tarjeta
                   </button>
                 </div>
               </div>
@@ -898,11 +909,11 @@
           <div class="grid md:grid-cols-3 gap-6 mb-6">
             <div>
               <label class="block text-sm text-slate-400 mb-2 font-medium">Monto de Inversi&oacute;n (USDT)</label>
-              <input type="number" id="roi-amount" value="1000" min="1" class="w-full bg-white/3 border border-white/8 text-white font-mono text-lg px-4 py-3 rounded-xl focus:border-amber-400/50 focus:outline-none transition">
+              <input type="number" id="roi-amount" value="1000" min="1" class="w-full bg-white/10 border border-white/20 text-white font-mono font-bold text-lg px-4 py-3 rounded-xl focus:bg-white/15 focus:border-amber-400/50 focus:outline-none transition">
             </div>
             <div>
               <label class="block text-sm text-slate-400 mb-2 font-medium">Producto Nexum</label>
-              <select id="roi-product" class="w-full bg-white/3 border border-white/8 text-white text-sm px-4 py-3 rounded-xl focus:border-amber-400/50 focus:outline-none transition" style="background-color:#0F1629;">
+              <select id="roi-product" class="w-full bg-white/10 border border-white/20 text-white font-bold text-sm px-4 py-3 rounded-xl focus:bg-white/15 focus:border-amber-400/50 focus:outline-none transition" style="background-color:#0F1629;">
                 <option value="0">&#9889; FLASH ($1)</option>
                 <option value="1" selected>&#127919; ORIGINAL ($1)</option>
                 <option value="2">&#128142; PREMIUM ($20)</option>
@@ -913,7 +924,7 @@
             </div>
             <div>
               <label class="block text-sm text-slate-400 mb-2 font-medium">Per&iacute;odo (Rondas)</label>
-              <input type="number" id="roi-rounds" value="12" min="1" max="100" class="w-full bg-white/3 border border-white/8 text-white font-mono text-lg px-4 py-3 rounded-xl focus:border-amber-400/50 focus:outline-none transition">
+              <input type="number" id="roi-rounds" value="12" min="1" max="100" class="w-full bg-white/10 border border-white/20 text-white font-mono font-bold text-lg px-4 py-3 rounded-xl focus:bg-white/15 focus:border-amber-400/50 focus:outline-none transition">
             </div>
           </div>
           <button onclick="calcROI()" class="btn-primary px-6 py-3 rounded-xl text-sm font-semibold mb-6">Calcular Retorno &rarr;</button>
@@ -1544,7 +1555,312 @@
     </section>
   </div>
 
-  <!-- FAQ / CHAT — Institutional Redesign -->
+  <!-- ROADMAP SECTION -->
+  <div id="roadmap-section" class="section">
+    <section class="py-24 px-6">
+      <div class="max-w-6xl mx-auto">
+
+        <!-- Header -->
+        <div class="text-center mb-16">
+          <p class="text-emerald-400 font-semibold text-sm uppercase tracking-widest mb-3">Hoja de Ruta</p>
+          <h2 class="font-display text-4xl md:text-5xl font-bold text-white mb-4">Roadmap <span class="text-emerald-400">2026 → 2027</span></h2>
+          <p class="text-slate-400 text-lg max-w-2xl mx-auto">12 mejoras en 4 fases para posicionar a NEXALO como el protocolo de lotería DeFi dominante a nivel global.</p>
+        </div>
+
+        <!-- Timeline strip -->
+        <div class="flex items-center mb-12 max-w-3xl mx-auto">
+          <div class="flex flex-col items-center">
+            <div class="w-10 h-10 rounded-full bg-emerald-400 flex items-center justify-center font-black text-black text-sm shadow-[0_0_15px_rgba(52,211,153,0.5)]">1</div>
+            <span class="text-xs text-emerald-400 font-bold mt-2 whitespace-nowrap">Inmediato</span>
+          </div>
+          <div class="flex-1 h-0.5 bg-gradient-to-r from-emerald-400 to-blue-400 mx-2"></div>
+          <div class="flex flex-col items-center">
+            <div class="w-10 h-10 rounded-full bg-blue-400 flex items-center justify-center font-black text-black text-sm shadow-[0_0_15px_rgba(96,165,250,0.5)]">2</div>
+            <span class="text-xs text-blue-400 font-bold mt-2 whitespace-nowrap">Meses 1–3</span>
+          </div>
+          <div class="flex-1 h-0.5 bg-gradient-to-r from-blue-400 to-amber-400 mx-2"></div>
+          <div class="flex flex-col items-center">
+            <div class="w-10 h-10 rounded-full bg-amber-400 flex items-center justify-center font-black text-black text-sm shadow-[0_0_15px_rgba(251,191,36,0.5)]">3</div>
+            <span class="text-xs text-amber-400 font-bold mt-2 whitespace-nowrap">Meses 3–6</span>
+          </div>
+          <div class="flex-1 h-0.5 bg-gradient-to-r from-amber-400 to-purple-400 mx-2"></div>
+          <div class="flex flex-col items-center">
+            <div class="w-10 h-10 rounded-full bg-purple-400 flex items-center justify-center font-black text-black text-sm shadow-[0_0_15px_rgba(192,132,252,0.5)]">4</div>
+            <span class="text-xs text-purple-400 font-bold mt-2 whitespace-nowrap">Meses 6–12</span>
+          </div>
+        </div>
+
+        <!-- Phase Cards -->
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-5 mb-14">
+
+          <!-- Fase 1 -->
+          <div class="rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(52,211,153,0.12)]" style="background:#0d1117;border:1px solid rgba(52,211,153,0.25)">
+            <div class="flex items-center justify-between mb-5">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" style="animation:pulse 2s infinite"></span>
+                <span class="text-xs text-emerald-400 font-black uppercase tracking-widest">Fase 1</span>
+              </div>
+              <span class="text-xs bg-emerald-400/15 text-emerald-400 border border-emerald-400/30 px-2 py-0.5 rounded-full font-semibold">En Progreso</span>
+            </div>
+            <h3 class="font-display text-xl font-black text-white mb-1">Pre-Mainnet</h3>
+            <p class="text-xs text-slate-500 mb-6 font-medium">Inmediato</p>
+            <ul class="space-y-4">
+              <li class="flex gap-3 items-start">
+                <span class="text-2xl leading-none mt-0.5">⚡</span>
+                <div>
+                  <p class="text-sm font-semibold text-white">Meta-Transactions</p>
+                  <p class="text-xs text-slate-500">Compra tickets sin tener BNB. Gasless para todos.</p>
+                </div>
+              </li>
+              <li class="flex gap-3 items-start">
+                <span class="text-2xl leading-none mt-0.5">📱</span>
+                <div>
+                  <p class="text-sm font-semibold text-white">PWA Móvil</p>
+                  <p class="text-xs text-slate-500">Notificaciones push cuando ganas. Sin App Store.</p>
+                </div>
+              </li>
+              <li class="flex gap-3 items-start">
+                <span class="text-2xl leading-none mt-0.5">🌍</span>
+                <div>
+                  <p class="text-sm font-semibold text-white">Multi-idioma</p>
+                  <p class="text-xs text-slate-500">EN / PT / FR / ZH / AR — mercado global.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Fase 2 -->
+          <div class="rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(96,165,250,0.12)]" style="background:#0d1117;border:1px solid rgba(96,165,250,0.2)">
+            <div class="flex items-center justify-between mb-5">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-400 inline-block opacity-60"></span>
+                <span class="text-xs text-blue-400 font-black uppercase tracking-widest">Fase 2</span>
+              </div>
+              <span class="text-xs bg-blue-400/10 text-blue-400 border border-blue-400/25 px-2 py-0.5 rounded-full font-semibold">Planificado</span>
+            </div>
+            <h3 class="font-display text-xl font-black text-white mb-1">Post-Launch</h3>
+            <p class="text-xs text-slate-500 mb-6 font-medium">Meses 1–3</p>
+            <ul class="space-y-4">
+              <li class="flex gap-3 items-start">
+                <span class="text-2xl leading-none mt-0.5">🔗</span>
+                <div>
+                  <p class="text-sm font-semibold text-white">Multi-Chain</p>
+                  <p class="text-xs text-slate-500">Arbitrum + Base vía LayerZero. 100M+ usuarios Coinbase.</p>
+                </div>
+              </li>
+              <li class="flex gap-3 items-start">
+                <span class="text-2xl leading-none mt-0.5">📊</span>
+                <div>
+                  <p class="text-sm font-semibold text-white">Analytics Público</p>
+                  <p class="text-xs text-slate-500">TVL en tiempo real, historial de ganadores, API.</p>
+                </div>
+              </li>
+              <li class="flex gap-3 items-start">
+                <span class="text-2xl leading-none mt-0.5">🤖</span>
+                <div>
+                  <p class="text-sm font-semibold text-white">Keeper Bot</p>
+                  <p class="text-xs text-slate-500">Auto-settlement open-source. Incentivado con gas.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Fase 3 -->
+          <div class="rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(251,191,36,0.12)]" style="background:#0d1117;border:1px solid rgba(251,191,36,0.2)">
+            <div class="flex items-center justify-between mb-5">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block opacity-60"></span>
+                <span class="text-xs text-amber-400 font-black uppercase tracking-widest">Fase 3</span>
+              </div>
+              <span class="text-xs bg-amber-400/10 text-amber-400 border border-amber-400/25 px-2 py-0.5 rounded-full font-semibold">Planificado</span>
+            </div>
+            <h3 class="font-display text-xl font-black text-white mb-1">Crecimiento</h3>
+            <p class="text-xs text-slate-500 mb-6 font-medium">Meses 3–6</p>
+            <ul class="space-y-4">
+              <li class="flex gap-3 items-start">
+                <span class="text-2xl leading-none mt-0.5">🏦</span>
+                <div>
+                  <p class="text-sm font-semibold text-white">Fiat On-Ramp</p>
+                  <p class="text-xs text-slate-500">Transak nativo. Tarjeta → USDT → Nexalo. Sin wallet previa.</p>
+                </div>
+              </li>
+              <li class="flex gap-3 items-start">
+                <span class="text-2xl leading-none mt-0.5">🎮</span>
+                <div>
+                  <p class="text-sm font-semibold text-white">Gamification</p>
+                  <p class="text-xs text-slate-500">Badges NFT, leaderboards de referidos, streaks.</p>
+                </div>
+              </li>
+              <li class="flex gap-3 items-start">
+                <span class="text-2xl leading-none mt-0.5">⚖️</span>
+                <div>
+                  <p class="text-sm font-semibold text-white">Compliance</p>
+                  <p class="text-xs text-slate-500">Geofencing por jurisdicción. Responsible gaming.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Fase 4 -->
+          <div class="rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(192,132,252,0.12)]" style="background:#0d1117;border:1px solid rgba(192,132,252,0.2)">
+            <div class="flex items-center justify-between mb-5">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-purple-400 inline-block opacity-60"></span>
+                <span class="text-xs text-purple-400 font-black uppercase tracking-widest">Fase 4</span>
+              </div>
+              <span class="text-xs bg-purple-400/10 text-purple-400 border border-purple-400/25 px-2 py-0.5 rounded-full font-semibold">Visión</span>
+            </div>
+            <h3 class="font-display text-xl font-black text-white mb-1">Dominio Global</h3>
+            <p class="text-xs text-slate-500 mb-6 font-medium">Meses 6–12</p>
+            <ul class="space-y-4">
+              <li class="flex gap-3 items-start">
+                <span class="text-2xl leading-none mt-0.5">🏛️</span>
+                <div>
+                  <p class="text-sm font-semibold text-white">DAO Governance</p>
+                  <p class="text-xs text-slate-500">Votación on-chain con veNXL. Grants para builders.</p>
+                </div>
+              </li>
+              <li class="flex gap-3 items-start">
+                <span class="text-2xl leading-none mt-0.5">🔌</span>
+                <div>
+                  <p class="text-sm font-semibold text-white">SDK Integradores</p>
+                  <p class="text-xs text-slate-500">@nexalo/sdk — embed en cualquier dApp. White-label.</p>
+                </div>
+              </li>
+              <li class="flex gap-3 items-start">
+                <span class="text-2xl leading-none mt-0.5">🛡️</span>
+                <div>
+                  <p class="text-sm font-semibold text-white">Insurance Pool</p>
+                  <p class="text-xs text-slate-500">Cobertura smart contract vía Nexus Mutual.</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+
+        <!-- Metrics row -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="glass rounded-2xl p-5 text-center">
+            <p class="text-2xl font-bold text-blue-400 font-display">72/100</p>
+            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Score actual</p>
+            <p class="text-xs text-slate-600 mt-0.5">vs 55 PoolTogether</p>
+          </div>
+          <div class="glass rounded-2xl p-5 text-center">
+            <p class="text-2xl font-bold text-emerald-400 font-display">95/100</p>
+            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Score Fase 4</p>
+            <p class="text-xs text-slate-600 mt-0.5">Dominio total</p>
+          </div>
+          <div class="glass rounded-2xl p-5 text-center">
+            <p class="text-2xl font-bold text-amber-400 font-display">$50M+</p>
+            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">TVL proyectado</p>
+            <p class="text-xs text-slate-600 mt-0.5">Mes 12</p>
+          </div>
+          <div class="glass rounded-2xl p-5 text-center">
+            <p class="text-2xl font-bold text-purple-400 font-display">200K+</p>
+            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Usuarios activos</p>
+            <p class="text-xs text-slate-600 mt-0.5">Mes 12</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+
+
+  <!-- FIAT / PRÓXIMAMENTE SECTION -->
+  <div id="fiat-section" class="section">
+    <section class="py-24 px-6">
+      <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-16">
+          <div class="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-full px-4 py-1.5 mb-6">
+            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse inline-block"></span>
+            <span class="text-amber-400 font-semibold text-sm uppercase tracking-widest">Próximamente</span>
+          </div>
+          <h2 class="font-display text-4xl md:text-5xl font-bold text-white mb-4">Cripto ↔ <span class="text-blue-400">Mundo Real</span></h2>
+          <p class="text-slate-400 text-lg max-w-2xl mx-auto">Conectamos el ecosistema DeFi con los pagos tradicionales — sin que NEXALO toque tus fondos en ningún momento.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-10 items-center mb-14">
+
+          <!-- Flujo explicado -->
+          <div class="space-y-6">
+            <div class="flex gap-5 items-start">
+              <div class="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 text-blue-400 font-bold">01</div>
+              <div>
+                <h4 class="font-bold text-white mb-1">Pagas con Tarjeta a Transak</h4>
+                <p class="text-slate-400 text-sm">Transak / Moonpay procesan el pago. Son proveedores regulados — NEXALO nunca toca ni ve esos fondos.</p>
+              </div>
+            </div>
+            <div class="flex gap-5 items-start">
+              <div class="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-400 font-bold">02</div>
+              <div>
+                <h4 class="font-bold text-white mb-1">USDT directo a tu Wallet</h4>
+                <p class="text-slate-400 text-sm">Transak convierte y envía el USDT directamente a tu wallet BSC. Sin intermediarios. Sin custodia de NEXALO.</p>
+              </div>
+            </div>
+            <div class="flex gap-5 items-start">
+              <div class="w-11 h-11 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0 text-purple-400 font-bold">03</div>
+              <div>
+                <h4 class="font-bold text-white mb-1">El Smart Contract toma el control</h4>
+                <p class="text-slate-400 text-sm">Con USDT en tu wallet, firmas la transacción al contrato autónomo. Desde aquí todo es on-chain, sin humanos.</p>
+              </div>
+            </div>
+
+            <!-- Cadena técnica -->
+            <div class="glass rounded-xl p-4 mt-2">
+              <p class="text-xs text-slate-500 font-mono">Tarjeta → <span class="text-amber-400">Transak (regulado)</span> → <span class="text-emerald-400">Wallet usuario</span> → <span class="text-blue-400">NexumManager ✅</span></p>
+            </div>
+          </div>
+
+          <!-- Partners + Mock widget -->
+          <div>
+            <div class="glass rounded-2xl p-8 text-center mb-6 relative overflow-hidden">
+              <div class="absolute inset-0 flex flex-col items-center justify-center z-10" style="background:rgba(8,11,18,0.75);backdrop-filter:blur(2px)">
+                <div class="text-5xl mb-3">🔒</div>
+                <p class="text-white font-bold text-lg mb-1">En Desarrollo</p>
+                <p class="text-slate-400 text-sm max-w-[200px]">Disponible al lanzar Mainnet</p>
+              </div>
+              <div class="opacity-20 blur-sm">
+                <p class="text-slate-400 text-xs mb-2">Monto en EUR/USD</p>
+                <div class="bg-white/5 rounded-xl p-4 mb-4"><span class="text-3xl font-mono font-bold text-white">€ 100.00</span></div>
+                <p class="text-slate-400 text-xs mb-2">Recibirás aprox.</p>
+                <div class="bg-white/5 rounded-xl p-4 mb-4"><span class="text-xl font-mono font-bold text-emerald-400">≈ 94.50 USDT</span></div>
+                <button class="btn-primary w-full py-3 rounded-xl font-bold text-sm">Pagar con Tarjeta →</button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 text-center">
+              <div class="glass rounded-xl p-3"><div class="text-xl mb-1">✅</div><p class="text-xs text-slate-400">KYC ligero</p></div>
+              <div class="glass rounded-xl p-3"><div class="text-xl mb-1">🚀</div><p class="text-xs text-slate-400">Sin wallet previa</p></div>
+              <div class="glass rounded-xl p-3"><div class="text-xl mb-1">🔒</div><p class="text-xs text-slate-400">SSL / PCI DSS</p></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Multi-chain preview -->
+        <div class="glass rounded-2xl p-7 border border-blue-400/15">
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse inline-block"></span>
+                <span class="text-xs text-blue-400 font-bold uppercase tracking-widest">Multi-Chain — Fase 2</span>
+              </div>
+              <h3 class="font-display text-xl font-bold text-white mb-1">Otras Redes — Arbitrum + Base</h3>
+              <p class="text-slate-400 text-sm max-w-lg">NEXALO desplegará en Layer 2s via LayerZero/Axelar en meses 1-3 post-launch. El token NXL será portable entre cadenas con un puente nativo.</p>
+            </div>
+            <div class="flex gap-3 shrink-0">
+              <div class="glass rounded-xl px-4 py-2 text-center"><p class="text-sm font-bold text-white">BSC</p><p class="text-xs text-slate-500">Mainnet ✅</p></div>
+              <div class="glass rounded-xl px-4 py-2 text-center opacity-50"><p class="text-sm font-bold text-white">Arbitrum</p><p class="text-xs text-slate-500">Pronto</p></div>
+              <div class="glass rounded-xl px-4 py-2 text-center opacity-50"><p class="text-sm font-bold text-white">Base</p><p class="text-xs text-slate-500">Pronto</p></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+
   <div id="faq-section" class="section">
     <section class="py-20 px-6">
       <div class="max-w-4xl mx-auto">
@@ -1584,7 +1900,7 @@
 
           <div class="px-6 pb-6">
             <div class="flex gap-3">
-              <input id="chat-input" type="text" placeholder="Escribe tu pregunta..." class="flex-1 bg-white/3 border border-white/8 text-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400/30 transition" maxlength="200" onkeydown="if(event.key==='Enter') sendChatMessage()">
+              <input id="chat-input" type="text" placeholder="Escribe tu pregunta..." class="flex-1 bg-white/10 border border-white/20 text-white font-semibold rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400/50 focus:bg-white/15 transition placeholder-slate-400" maxlength="200" onkeydown="if(event.key==='Enter') sendChatMessage()">
               <button onclick="sendChatMessage()" class="btn-primary px-5 py-3 rounded-xl text-sm font-semibold">ENVIAR</button>
             </div>
           </div>
@@ -1807,16 +2123,30 @@
   // ==========================
   async function initReadProvider() {
     const rpcList = CONFIG.NETWORK.rpcUrls || [];
+    console.log('[Nexalo] Probando RPCs...', rpcList);
     for (const url of rpcList) {
       try {
         const p = new ethers.providers.JsonRpcProvider(url);
-        const net = await p.getNetwork();
-        if (net.chainId !== CONFIG.NETWORK.chainIdDecimal) continue;
+        // Timeout de 5 segundos para evitar que cuelgue con RPCs muertos
+        const net = await Promise.race([
+          p.getNetwork(),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('RPC timeout')), 5000))
+        ]);
+        if (net.chainId !== CONFIG.NETWORK.chainIdDecimal) {
+          console.warn('[Nexalo] RPC chainId incorrecto:', url, 'esperado:', CONFIG.NETWORK.chainIdDecimal, 'recibido:', net.chainId);
+          continue;
+        }
         S.readProvider = p;
+        console.log('[Nexalo] ✅ RPC conectado:', url);
         break;
-      } catch {}
+      } catch (err) {
+        console.warn('[Nexalo] ❌ RPC falló:', url, err.message);
+      }
     }
-    if (!S.readProvider) return;
+    if (!S.readProvider) {
+      console.error('[Nexalo] ⚠️ Ningún RPC disponible. Funcionalidad limitada.');
+      return;
+    }
 
     S.mgrRead = new ethers.Contract(CONFIG.CONTRACTS.NEXUM_MANAGER, NEXUM_MANAGER_ABI, S.readProvider);
     S.usdtRead = new ethers.Contract(CONFIG.CONTRACTS.USDT, ERC20_ABI, S.readProvider);
@@ -2523,5 +2853,6 @@
   <script src="./js/helpers.js"></script>
   <script src="./js/i18n.js"></script>
   <script src="./js/faq-chat.js"></script>
+  <script src="./js/fiat-onramp.js"></script>
 </body>
 </html>
