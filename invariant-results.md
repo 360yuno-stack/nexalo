@@ -2,7 +2,7 @@
 
 Generated: 2026-05-19  
 Tool: Foundry (forge v1.7.1)  
-Config: 256 runs × 100 depth × 5 invariants = **128,000 adversarial calls**  
+Config: **5,000 runs × 200 depth** × 5 invariants = **5,000,000 adversarial calls**  
 Fuzz mode: `fail_on_revert = false` (reverts are expected; only invariant violations count)
 
 ---
@@ -10,13 +10,14 @@ Fuzz mode: `fail_on_revert = false` (reverts are expected; only invariant violat
 ## Results
 
 ```
-[PASS] invariant_Solvency()            (runs: 256, calls: 25,600)
-[PASS] invariant_DifferentialAccounting() (runs: 256, calls: 25,600)
-[PASS] invariant_RoundMonotonicity()   (runs: 256, calls: 25,600)
-[PASS] invariant_TicketsBounded()      (runs: 256, calls: 25,600)
-[PASS] invariant_PauseBlocks()         (runs: 256, calls: 25,600)
+[PASS] invariant_Solvency()            (runs: 5,000, calls: 1,000,000)
+[PASS] invariant_DifferentialAccounting() (runs: 5,000, calls: 1,000,000)
+[PASS] invariant_RoundMonotonicity()   (runs: 5,000, calls: 1,000,000)
+[PASS] invariant_TicketsBounded()      (runs: 5,000, calls: 1,000,000)
+[PASS] invariant_PauseBlocks()         (runs: 5,000, calls: 1,000,000)
 
 Suite result: ok. 5 passed; 0 failed; 0 skipped
+Execution time: 232.13s (702.74s CPU)
 ```
 
 ---
