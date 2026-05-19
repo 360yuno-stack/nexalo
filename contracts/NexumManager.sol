@@ -1127,6 +1127,8 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         uint256 maxIters = tickets + totalWinners;
 
         for (uint256 i = 0; i < maxIters && winnersFound < totalWinners; i++) {
+            // M-01 FIX: Gas safety net — leave enough gas for cleanup and storage writes
+            if (gasleft() < 50_000) break;
             if (totalPaid >= expectedPaid) break;
 
             idx = (idx + step) % tickets;
