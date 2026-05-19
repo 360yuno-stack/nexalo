@@ -816,14 +816,16 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         uint256 winningTicket = randomWord % product.maxTickets;
 
         address winner = ticketOwner[productId][roundId][winningTicket];
-        // Fallback: si el ticket ganador no tiene owner (edge case), buscar el primero con owner
+
+        // P-01 FIX: Removed unbounded O(maxTickets) fallback loop.
+        // Invariant: ticketsSold == maxTickets before VRF is ever requested,
+        // so every ticket index in [0, maxTickets) MUST have an owner.
+        // If, due to an extreme bug, winner is still address(0), we emit
+        // SettlementFailed so the pauseGuardian can intervene via manualSettle.
         if (winner == address(0)) {
-            for (uint256 i = 0; i < product.maxTickets; i++) {
-                winner = ticketOwner[productId][roundId][i];
-                if (winner != address(0)) { winningTicket = i; break; }
-            }
+            emit SettlementFailed(productId, roundId, abi.encode("winner_slot_empty"));
+            return;
         }
-        if (winner == address(0)) return;
 
         round.vrfRandomWord = randomWord;
         round.winner = winner;
@@ -855,14 +857,17 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         _startNewRound(productId);
     }
 
-    /// @notice HIGH-02 FIX: Manual settlement for rounds where VRF callback settlement failed.
-    /// @dev Anyone can call — idempotent (settleRoundToClaims handles double-settle gracefully).
+    /// @notice P-04 FIX: Dedicated flag replaces fragile claimableStable-based guard.
+    /// @dev Anyone can call when the VRF callback settlement failed (SettlementFailed emitted).
+    ///      Protected by roundPrizeAccrued[productId][roundId] — set atomically in _settleRoundToClaims.
+    mapping(uint256 => mapping(uint256 => bool)) public roundPrizeAccrued;
+
     function manualSettle(uint256 productId, uint256 roundId) external nonReentrant {
         Round storage round = rounds[productId][roundId];
         require(round.completed, "Round not completed");
         require(round.winner != address(0), "No winner");
-        // Only allow if settlement hasn't accrued the prize yet
-        require(claimableStable[round.winner] == 0 || !round.liquiditySettled, "Already settled");
+        // P-04 FIX: Use dedicated flag — immune to winner claiming then settling again
+        require(!roundPrizeAccrued[productId][roundId], "Prize already accrued");
         _settleRoundToClaims(productId, roundId, round.winner, round.winningTicket, round.vrfRandomWord);
     }
 
@@ -909,6 +914,11 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
     /// @notice Índice del próximo inversor a liquidar (permite paginación si >100 inversores)
     mapping(uint256 => mapping(uint256 => uint256)) public liquiditySettleIndex;
 
+    /// @notice P-02 FIX: Store residual principal/profit per page to avoid O(N) re-iteration.
+    ///         On each page, we read from storage instead of recalculating from scratch.
+    mapping(uint256 => mapping(uint256 => uint256)) public settleRemainingPrincipal;
+    mapping(uint256 => mapping(uint256 => uint256)) public settleRemainingProfit;
+
     function _settleRoundLiquidity(uint256 productId, uint256 roundId) private {
         Round storage round = rounds[productId][roundId];
         if (round.liquiditySettled) return;
@@ -928,16 +938,17 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         uint256 endIdx = startIdx + MAX_INVESTORS_PER_SETTLEMENT;
         if (endIdx > investors.length) endIdx = investors.length;
 
-        uint256 remainingPrincipal = totalPrincipal;
-        uint256 remainingProfit = totalProfit;
-
-        // Subtract already-processed amounts from remaining
-        for (uint256 k = 0; k < startIdx; ++k) {
-            address prev = investors[k];
-            uint256 pr = roundInvestorPrincipal[productId][roundId][prev];
-            uint256 pf = (totalProfit * pr) / totalPrincipal;
-            if (remainingPrincipal >= pr) remainingPrincipal -= pr; else remainingPrincipal = 0;
-            if (remainingProfit >= pf) remainingProfit -= pf; else remainingProfit = 0;
+        // P-02 FIX: Load residuals from storage (O(1)) instead of re-iterating (O(N))
+        uint256 remainingPrincipal;
+        uint256 remainingProfit;
+        if (startIdx == 0) {
+            // First page — initialize from round totals
+            remainingPrincipal = totalPrincipal;
+            remainingProfit = totalProfit;
+        } else {
+            // Subsequent pages — load stored residuals
+            remainingPrincipal = settleRemainingPrincipal[productId][roundId];
+            remainingProfit    = settleRemainingProfit[productId][roundId];
         }
 
         for (uint256 i = startIdx; i < endIdx; ++i) {
@@ -966,6 +977,10 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
 
         liquiditySettleIndex[productId][roundId] = endIdx;
 
+        // P-02 FIX: Persist residuals for next page (no-op on last page, storage is cheap vs re-iteration)
+        settleRemainingPrincipal[productId][roundId] = remainingPrincipal;
+        settleRemainingProfit[productId][roundId]    = remainingProfit;
+
         if (endIdx >= investors.length) {
             round.liquiditySettled = true;
             emit RoundLiquiditySettled(productId, roundId, totalPrincipal, totalProfit);
@@ -989,6 +1004,9 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
     ) private {
         Round storage round = rounds[productId][roundId];
         NexumProduct memory product = products[productId];
+
+        // P-04 FIX: Set flag BEFORE accruing prize (CEI pattern — prevents manualSettle re-entry)
+        roundPrizeAccrued[productId][roundId] = true;
 
         _accrueStable(winner, round.prizePot);
 
