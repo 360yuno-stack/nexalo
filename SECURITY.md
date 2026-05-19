@@ -15,6 +15,22 @@ Out of scope: frontend interfaces, off-chain bots, third-party integrations (Cha
 
 ---
 
+## Verification Evidence (Reproducible)
+
+| Evidence | File | How to reproduce |
+|---|---|---|
+| **Gas Benchmark** — O(1) proof with 100 sequential buys | [`gas-benchmark.md`](gas-benchmark.md) | `npx hardhat test test/gas-benchmark.test.js` |
+| **Invariant Fuzzing** — 128K adversarial calls, 5/5 PASS | [`invariant-results.md`](invariant-results.md) | `forge test --match-contract NexaloInvariantTest -vvv` |
+| **Unit/Integration Tests** — 31 passing | `test/NexumManager.core.test.js` | `npx hardhat test test/NexumManager.core.test.js` |
+
+### Key Metrics
+- `buyTickets(1)`: **350K gas** (warm) — NOT 34M as claimed in external review
+- **O(1) scaling**: 17K warm variance across 100 sequential purchases
+- **128,000 random adversarial interactions** without a single invariant violation
+- **Solvency invariant** holds under all fuzzing scenarios
+
+---
+
 ## Audit History
 
 | Firm | Date | Scope | Report |
