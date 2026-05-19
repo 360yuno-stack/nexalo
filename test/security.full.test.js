@@ -39,7 +39,7 @@ async function deployEcosystem() {
     auditAddr.address, guardian.address
   );
   await vrf.addConsumer(VRF_SUB, await nm.getAddress());
-  await nxl.setNexumManager(await nm.getAddress());
+  await nxl.connect(founder).setNexumManager(await nm.getAddress());
 
   // WBTC mock
   const wbtc = await (await ethers.getContractFactory("contracts/TestUSDT.sol:TestUSDT")).deploy();

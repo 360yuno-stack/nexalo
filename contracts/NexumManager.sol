@@ -32,6 +32,10 @@ interface ITreasuryBTCNotify {
     function onFundsReceived(uint256 amount) external;
 }
 
+interface IAmbassadorDistribute {
+    function distributeFunds() external;
+}
+
 contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
@@ -92,7 +96,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
     uint64 public immutable subscriptionId;
     bytes32 public immutable keyHash;
 
-    uint32 public callbackGasLimit = 3_500_000;
+    uint32 public callbackGasLimit = 2_500_000;
     uint16 public constant REQUEST_CONFIRMATIONS = 3;
     uint32 public constant NUM_WORDS = 1;
 
@@ -176,6 +180,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
 
     event NXLAccrued(address indexed user, uint256 amount);
     event NXLClaimed(address indexed user, uint256 amount);
+    event NXLPartialAccrued(address indexed user, uint256 requested, uint256 accrued);
 
     event NXLTokenTreasuryConfigured(address treasury);
 
@@ -185,6 +190,9 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
     event RoundLiquidityProvided(uint256 indexed productId, uint256 indexed roundId, address indexed investor, uint256 amount, uint256 fundedAfter, uint256 target);
     event RoundLiquiditySettled(uint256 indexed productId, uint256 indexed roundId, uint256 totalPrincipal, uint256 totalProfit);
     event RoundInvestorAccrued(uint256 indexed productId, uint256 indexed roundId, address indexed investor, uint256 principal, uint256 profit, uint256 totalReturn);
+
+    event SettlementFailed(uint256 indexed productId, uint256 indexed roundId, bytes reason);
+    event NewRoundFailed(uint256 indexed productId, bytes reason);
 
 
 
@@ -823,13 +831,18 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         round.completed = true;
 
         // Ambos pasos wrapeados — el callback NUNCA puede revertir (Chainlink best practice)
+        // HIGH-02 FIX: Emit events on failure for off-chain monitoring
         try this._externalSettle(productId, roundId, winner, winningTicket, randomWord) {
-        } catch { }
+        } catch (bytes memory reason) {
+            emit SettlementFailed(productId, roundId, reason);
+        }
 
         emit RoundCompleted(productId, roundId, winner, round.prizePot, winningTicket);
 
         try this._externalStartNewRound(productId) {
-        } catch { }
+        } catch (bytes memory reason) {
+            emit NewRoundFailed(productId, reason);
+        }
     }
 
     function _externalSettle(uint256 productId, uint256 roundId, address winner, uint256 winningTicket, uint256 randomWord) external {
@@ -840,6 +853,17 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
     function _externalStartNewRound(uint256 productId) external {
         if (msg.sender != address(this)) revert OnlySelf();
         _startNewRound(productId);
+    }
+
+    /// @notice HIGH-02 FIX: Manual settlement for rounds where VRF callback settlement failed.
+    /// @dev Anyone can call — idempotent (settleRoundToClaims handles double-settle gracefully).
+    function manualSettle(uint256 productId, uint256 roundId) external nonReentrant {
+        Round storage round = rounds[productId][roundId];
+        require(round.completed, "Round not completed");
+        require(round.winner != address(0), "No winner");
+        // Only allow if settlement hasn't accrued the prize yet
+        require(claimableStable[round.winner] == 0 || !round.liquiditySettled, "Already settled");
+        _settleRoundToClaims(productId, roundId, round.winner, round.winningTicket, round.vrfRandomWord);
     }
 
 
@@ -1007,21 +1031,32 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         }
     }
 
+    /// @dev CRIT-01 FIX: Never accrue more NXL than actually available.
+    ///      If pool is exhausted, accrue only what's left (may be 0).
     function _safeDistributeOrAccrueNXL(address recipient, uint256 amount, uint256 productId) internal {
         if (amount == 0) return;
 
         uint256 available = nxlToken.getAvailableRewards();
         if (available < amount) {
             _deactivateProduct(productId);
-            claimableNXL[recipient] += amount;
-            emit NXLAccrued(recipient, amount);
+            // CRIT-01 FIX: Only accrue what is actually available, not the full amount
+            uint256 toAccrue = available;
+            if (toAccrue > 0) {
+                claimableNXL[recipient] += toAccrue;
+                emit NXLPartialAccrued(recipient, amount, toAccrue);
+            }
             return;
         }
 
         try nxlToken.distributeReward(recipient, amount) {
         } catch {
-            claimableNXL[recipient] += amount;
-            emit NXLAccrued(recipient, amount);
+            // Distribution failed — accrue only what's available right now
+            uint256 nowAvailable = nxlToken.getAvailableRewards();
+            uint256 toAccrue = nowAvailable < amount ? nowAvailable : amount;
+            if (toAccrue > 0) {
+                claimableNXL[recipient] += toAccrue;
+            }
+            emit NXLAccrued(recipient, toAccrue);
             _deactivateProduct(productId);
         }
     }
@@ -1154,11 +1189,14 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         emit NewRoundStarted(productId, newRoundId, block.timestamp);
     }
 
-    function reactivateProduct(uint256 productId) external onlyOwner {
+    /// @notice HIGH-03 FIX: reactivateProduct callable by guardian OR owner.
+    ///         After renounceOwnership, only guardian can reactivate.
+    function reactivateProduct(uint256 productId) external onlyPauseGuardianOrOwner {
         if (productId >= PRODUCT_COUNT) revert InvalidProduct();
         require(!products[productId].active, "Already active");
         if (globalStopped) revert ContractStopped();
         products[productId].active = true;
+        _startNewRound(productId); // Start a fresh round for the reactivated product
         emit ProductReactivated(productId);
     }
 
@@ -1172,8 +1210,28 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         paused = false;
     }
 
-    function setCallbackGasLimit(uint32 _gasLimit) external onlyOwner {
+    /// @notice HIGH-04 FIX: setCallbackGasLimit callable by guardian OR owner.
+    function setCallbackGasLimit(uint32 _gasLimit) external onlyPauseGuardianOrOwner {
         require(_gasLimit >= 1_000_000 && _gasLimit <= 5_000_000, "Invalid gas limit");
         callbackGasLimit = _gasLimit;
+    }
+
+    // ── Public Getters (Auditor Fix #4) ───────────────────────────────────
+
+    /// @notice Returns all ticket numbers owned by a user in a specific round.
+    /// @dev Exposes the internal userTickets mapping for frontend consumption.
+    function getUserTickets(uint256 productId, uint256 roundId, address user)
+        external view returns (uint256[] memory)
+    {
+        return userTickets[productId][roundId][user];
+    }
+
+    /// @notice Returns the owner of a specific ticket number in a round.
+    /// @dev ticketOwner mapping is already public (auto-getter), but this
+    ///      provides a clearer API name for frontend integration.
+    function getTicketOwner(uint256 productId, uint256 roundId, uint256 ticketNumber)
+        external view returns (address)
+    {
+        return ticketOwner[productId][roundId][ticketNumber];
     }
 }

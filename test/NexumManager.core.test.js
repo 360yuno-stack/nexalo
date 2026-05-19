@@ -38,7 +38,7 @@ async function deployFixture() {
             guardian.address
         );
 
-    await nxl.setNexumManager(await manager.getAddress());
+    await nxl.connect(founder).setNexumManager(await manager.getAddress());
     await mockVRF.addConsumer(VRF_SUB, await manager.getAddress());
 
     const rn = await (await ethers.getContractFactory("ReferralNetwork"))
@@ -309,8 +309,8 @@ describe("NexumManager — Core", () => {
         });
 
         it("rejects setNexumManager twice", async () => {
-            const { nxl, alice } = await loadFixture(deployFixture);
-            await expect(nxl.connect(alice).setNexumManager(alice.address))
+            const { nxl, founder } = await loadFixture(deployFixture);
+            await expect(nxl.connect(founder).setNexumManager(founder.address))
                 .to.be.revertedWith("Manager already set");
         });
     });

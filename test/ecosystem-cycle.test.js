@@ -94,7 +94,7 @@ describe("NEXALO - Ecosystem full cycle (Nexum + Treasury + Referral + Staking)"
     // Add consumer to VRF
     await (await vrf.addConsumer(subId, managerAddr)).wait();
     // Set NXL manager (one-time setter)
-    await (await nxl.setNexumManager(managerAddr)).wait();
+    await (await nxl.connect(founder).setNexumManager(managerAddr)).wait();
     await (await referral.setNexumManager(managerAddr)).wait();
 
     // 6) Treasury + set ecosystem (IMPORTANT: Treasury needs WBTC param)

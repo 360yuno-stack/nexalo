@@ -1,10 +1,8 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</html>
+</body>
+  <script src="./js/faq-chat.js"></script>
   <title>NEXALO — Protocolo DeFi Autónomo | Rendimiento Real en Blockchain</title>
-
   <meta name="description" content="El primer protocolo de lotería DeFi completamente autónomo en BSC. Rendimientos reales en USDT y WBTC. Auditable on-chain. Chainlink VRF.">
 
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%233B82F6'/><text y='.85em' font-size='60' x='20'>N</text></svg>">
@@ -661,293 +659,86 @@
           <p class="text-slate-400 text-lg">Paga con USDT &bull; Recibe NXL &bull; Progreso en tiempo real desde la blockchain</p>
         </div>
 
-        <div class="nexum-grid" id="nexum-grid">
-          <!-- Rendered by JS on load -->
+        <div class="nexum-grid">
+
         </div>
-
-        <script>
-        // Render Nexum product cards from CONFIG
-        (function renderNexumCards() {
-          const grid = document.getElementById('nexum-grid');
-          if (!grid || !window.CONFIG) return;
-
-          const colors = {
-            0: { accent: '#10B981', label: 'FLASH',     gradient: 'from-emerald-500/15 to-emerald-600/5',  border: 'border-emerald-500/25', text: 'text-emerald-400' },
-            1: { accent: '#F59E0B', label: 'ORIGINAL',  gradient: 'from-amber-500/15 to-amber-600/5',      border: 'border-amber-500/25',   text: 'text-amber-400' },
-            2: { accent: '#A78BFA', label: 'PREMIUM',   gradient: 'from-purple-500/15 to-purple-600/5',    border: 'border-purple-500/25',  text: 'text-purple-400' },
-            3: { accent: '#38BDF8', label: 'ELITE',     gradient: 'from-sky-500/15 to-sky-600/5',          border: 'border-sky-500/25',     text: 'text-sky-400' },
-            4: { accent: '#F472B6', label: 'VIP',       gradient: 'from-pink-500/15 to-pink-600/5',        border: 'border-pink-500/25',    text: 'text-pink-400' },
-            5: { accent: '#FB923C', label: 'BLACKBLOK', gradient: 'from-orange-500/15 to-orange-600/5',    border: 'border-orange-500/25',  text: 'text-orange-400' }
-          };
-
-          grid.innerHTML = CONFIG.PRODUCTS.map(p => {
-            const c = colors[p.id] || colors[0];
-            return `
-              <div class="glass rounded-2xl overflow-hidden card-hover ${c.border}" style="border-width:1px;">
-                <!-- Header -->
-                <div class="bg-gradient-to-r ${c.gradient} px-6 py-4 border-b border-white/5">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                      <span class="text-2xl">${p.emoji}</span>
-                      <div>
-                        <h3 class="font-display text-lg font-bold text-white">${p.name}</h3>
-                        <p class="text-xs text-slate-500">Nexum #${p.id}</p>
-                      </div>
-                    </div>
-                    <span class="text-xs font-semibold px-2 py-1 rounded-full bg-white/5 ${c.text}">${p.digits === 3 ? '000–999' : '0000–9999'}</span>
-                  </div>
-                </div>
-
-                <!-- Body -->
-                <div class="px-6 py-5">
-                  <!-- Jackpot -->
-                  <div class="text-center mb-4">
-                    <p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Jackpot</p>
-                    <p class="text-3xl font-bold font-display ${c.text} prize-amount">$${p.jackpot.toLocaleString()}</p>
-                    <p class="text-xs text-slate-600 mt-1">USDT</p>
-                  </div>
-
-                  <!-- Stats -->
-                  <div class="grid grid-cols-2 gap-3 mb-4">
-                    <div class="bg-white/3 rounded-lg p-3 text-center border border-white/5">
-                      <p class="text-xs text-slate-500">Precio</p>
-                      <p class="text-sm font-bold text-white">$${p.price} USDT</p>
-                    </div>
-                    <div class="bg-white/3 rounded-lg p-3 text-center border border-white/5">
-                      <p class="text-xs text-slate-500">NXL/Ticket</p>
-                      <p class="text-sm font-bold ${c.text}">${p.nxlPerTicket}</p>
-                    </div>
-                  </div>
-
-                  <!-- Progress -->
-                  <div class="mb-4">
-                    <div class="flex justify-between text-xs mb-1">
-                      <span class="text-slate-500">Vendidos</span>
-                      <span class="text-slate-300"><span id="sold-${p.id}">0</span> / ${p.maxTickets.toLocaleString()}</span>
-                    </div>
-                    <div class="progress-track">
-                      <div class="progress-fill" id="progress-${p.id}" style="width:0%; background:${c.accent};"></div>
-                    </div>
-                  </div>
-
-                  <!-- Quick Buy -->
-                  <div class="flex gap-2 mb-3">
-                    ${[1,3,5,10].map(q => `
-                      <button onclick="buyBatch(${p.id}, ${q})"
-                        class="flex-1 py-2 rounded-lg text-xs font-bold transition hover:scale-105 bg-white/5 border border-white/8 text-slate-300 hover:border-blue-400/40 hover:text-white">
-                        ${q}
-                      </button>
-                    `).join('')}
-                  </div>
-
-                  <!-- Manual Select -->
-                  <button onclick="openModal(${p.id})"
-                    class="w-full py-3 rounded-xl text-sm font-semibold transition"
-                    style="background: linear-gradient(135deg, ${c.accent}22, ${c.accent}08); border: 1px solid ${c.accent}40; color: ${c.accent};">
-                    Elegir Números Manualmente
-                  </button>
-                </div>
-              </div>
-            `;
-          }).join('');
-        })();
-        </script>
       </div>
     </section>
 
-  </div> <!-- close home-section -->
-
-  <!-- MI CUENTA SECTION — Institutional Portfolio Dashboard -->
-  <div id="account-section" class="section">
-    <section class="py-20 px-6">
-      <div class="max-w-6xl mx-auto">
-        <div class="text-center mb-14">
-          <p class="text-blue-400 font-semibold text-sm uppercase tracking-widest mb-3">Panel Personal</p>
-          <h2 class="font-display text-4xl md:text-5xl font-bold text-white mb-4">Mi Cuenta</h2>
-          <p class="text-slate-400 text-lg max-w-2xl mx-auto">Gestiona tu portafolio, reclama recompensas y monitorea tu actividad on-chain en tiempo real.</p>
-        </div>
-
-        <div id="account-no-wallet" class="glass-blue rounded-2xl p-6 text-center mb-10">
-          <div class="flex items-center justify-center gap-3 mb-3">
-            <svg width="24" height="24" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-            <span class="text-blue-400 font-semibold">Wallet No Conectada</span>
-          </div>
-          <p class="text-slate-400 text-sm mb-4">Conecta tu wallet para ver tu portafolio completo y reclamar recompensas.</p>
-          <button onclick="openWalletSelectModal()" class="btn-primary px-6 py-3 rounded-xl text-sm">Conectar Wallet &rarr;</button>
-        </div>
-
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-          <div class="glass rounded-2xl p-5 text-center card-hover">
-            <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center mx-auto mb-3">
-              <svg width="20" height="20" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-            </div>
-            <p class="text-2xl font-bold text-white font-display" id="acc-usdt-balance">$0.00</p>
-            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Balance USDT</p>
-          </div>
-          <div class="glass rounded-2xl p-5 text-center card-hover">
-            <div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center mx-auto mb-3">
-              <svg width="20" height="20" fill="none" stroke="#10B981" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 10l4-4 4 4"/></svg>
-            </div>
-            <p class="text-2xl font-bold text-emerald-400 font-display" id="nxl-balance">0.00</p>
-            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Balance NXL</p>
-          </div>
-          <div class="glass rounded-2xl p-5 text-center card-hover">
-            <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center mx-auto mb-3">
-              <svg width="20" height="20" fill="none" stroke="#F59E0B" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2M12 2v2m0 16v2"/></svg>
-            </div>
-            <p class="text-2xl font-bold text-amber-400 font-display" id="acc-claimable-usdt">$0.00</p>
-            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">USDT Reclamable</p>
-          </div>
-          <div class="glass rounded-2xl p-5 text-center card-hover">
-            <div class="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center mx-auto mb-3">
-              <svg width="20" height="20" fill="none" stroke="#A78BFA" stroke-width="2" viewBox="0 0 24 24"><path d="M20 12V8H6a2 2 0 010-4h12V0"/><path d="M4 6v12a2 2 0 002 2h14v-4"/><circle cx="18" cy="16" r="2"/></svg>
-            </div>
-            <p class="text-2xl font-bold text-purple-400 font-display" id="acc-claimable-nxl">0.00</p>
-            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">NXL Reclamable</p>
-          </div>
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-6 mb-10">
-          <div class="glass rounded-2xl p-6 card-hover">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
-                <svg width="20" height="20" fill="none" stroke="#F59E0B" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+  <!-- MI CUENTA SECTION -->
+            Las recompensas instantáneas de Nexalo requieren liquidez inicial. Como inversor, puedes aportar USDT a la pool de cualquier Nexum. 
+            Cuando la ronda finaliza, el Smart Contract te devuelve tu inversión principal más un % de ganancias proveniente del Liquidity Profit Pool, directo a tu wallet.
+          </p>
+          
+          <div class="grid md:grid-cols-2 gap-8 mt-8">
+            <!-- Pool FLASH -->
+            <div class="bg-black/80 border border-gray-700 rounded-xl p-6">
+              <div class="flex justify-between items-center mb-4">
+                <h4 class="text-xl font-black text-[#00FF41]">⚡ FLASH Pool</h4>
+                <span class="text-xs font-mono bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded">Ronda Activa</span>
               </div>
-              <div><h3 class="font-semibold text-white">Reclamar USDT</h3><p class="text-xs text-slate-500">Premios y recompensas instantáneas</p></div>
-            </div>
-            <p class="text-slate-400 text-sm mb-4">Reclama tus ganancias acumuladas de premios, recompensas instantáneas y comisiones del protocolo.</p>
-            <button onclick="claimStableFromManager()" class="w-full btn-primary py-3 rounded-xl text-sm font-semibold">Reclamar USDT &rarr;</button>
-          </div>
-          <div class="glass rounded-2xl p-6 card-hover">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
-                <svg width="20" height="20" fill="none" stroke="#10B981" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 10l4-4 4 4"/></svg>
+              <div class="mb-4">
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="text-gray-400">Liquidez Fondeada</span>
+                  <span class="text-white font-bold">$<span class="investor-funded">0.00</span> / $<span class="investor-target">100.00</span></span>
+                </div>
+                <div class="w-full bg-gray-800 rounded-full h-2">
+                  <div class="bg-yellow-400 h-2 rounded-full" style="width: 0%"></div>
+                </div>
               </div>
-              <div><h3 class="font-semibold text-white">Reclamar NXL</h3><p class="text-xs text-slate-500">Tokens por participación</p></div>
+              <div class="flex gap-2">
+                <input type="number" placeholder="USDT" class="flex-1 bg-black border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                <button class="bg-yellow-400 text-black font-black px-4 py-2 rounded text-sm hover:scale-105 transition">APORTAR</button>
+              </div>
             </div>
-            <p class="text-slate-400 text-sm mb-4">Reclama tokens NXL ganados por compra de tickets. Cada número comprado genera rewards en NXL.</p>
-            <button onclick="claimNXLFromManager()" class="w-full btn-emerald py-3 rounded-xl text-sm font-semibold">Reclamar NXL &rarr;</button>
-          </div>
-        </div>
 
-        <div class="glass rounded-2xl p-8 mb-10">
-          <div class="flex items-center gap-3 mb-6">
-            <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center">
-              <svg width="20" height="20" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            <!-- Pool ORIGINAL -->
+            <div class="bg-black/80 border border-gray-700 rounded-xl p-6">
+              <div class="flex justify-between items-center mb-4">
+                <h4 class="text-xl font-black text-yellow-400">🌟 ORIGINAL Pool</h4>
+                <span class="text-xs font-mono bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded">Ronda Activa</span>
+              </div>
+              <div class="mb-4">
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="text-gray-400">Liquidez Fondeada</span>
+                  <span class="text-white font-bold">$<span class="investor-funded">0.00</span> / $<span class="investor-target">1,000.00</span></span>
+                </div>
+                <div class="w-full bg-gray-800 rounded-full h-2">
+                  <div class="bg-yellow-400 h-2 rounded-full" style="width: 0%"></div>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <input type="number" placeholder="USDT" class="flex-1 bg-black border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                <button class="bg-yellow-400 text-black font-black px-4 py-2 rounded text-sm hover:scale-105 transition">APORTAR</button>
+              </div>
             </div>
-            <div><h3 class="font-display text-xl font-bold text-white">Red de Referidos</h3><p class="text-xs text-slate-500">Sistema multinivel &middot; 3 niveles &middot; 10% del capital</p></div>
+            
+             <!-- Pool PREMIUM -->
+            <div class="bg-black/80 border border-gray-700 rounded-xl p-6">
+              <div class="flex justify-between items-center mb-4">
+                <h4 class="text-xl font-black text-purple-400">💎 PREMIUM Pool</h4>
+                <span class="text-xs font-mono bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded">Ronda Activa</span>
+              </div>
+              <div class="mb-4">
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="text-gray-400">Liquidez Fondeada</span>
+                  <span class="text-white font-bold">$<span class="investor-funded">0.00</span> / $<span class="investor-target">2,000.00</span></span>
+                </div>
+                <div class="w-full bg-gray-800 rounded-full h-2">
+                  <div class="bg-yellow-400 h-2 rounded-full" style="width: 0%"></div>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <input type="number" placeholder="USDT" class="flex-1 bg-black border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                <button class="bg-yellow-400 text-black font-black px-4 py-2 rounded text-sm hover:scale-105 transition">APORTAR</button>
+              </div>
+            </div>
           </div>
-          <div class="grid md:grid-cols-3 gap-6">
-            <div class="bg-white/3 rounded-xl p-4 border border-white/5">
-              <p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Mi Referidor</p>
-              <p class="text-sm text-white font-mono truncate" id="my-referrer">&mdash;</p>
-            </div>
-            <div class="bg-white/3 rounded-xl p-4 border border-white/5">
-              <p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Cadena de Referidos</p>
-              <p class="text-xs text-slate-300 font-mono truncate" id="my-chain">&mdash;</p>
-            </div>
-            <div class="bg-white/3 rounded-xl p-4 border border-white/5">
-              <p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Comisiones Disponibles</p>
-              <p class="text-lg font-bold text-emerald-400" id="ref-claimable">$0.00</p>
-              <button onclick="claimReferral()" class="mt-2 text-xs text-blue-400 hover:text-blue-300 font-semibold transition">Reclamar &rarr;</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="glass rounded-2xl p-6">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 rounded-xl bg-slate-500/15 flex items-center justify-center">
-              <svg width="20" height="20" fill="none" stroke="#94A3B8" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-            </div>
-            <div><h3 class="font-semibold text-white">Direcci&oacute;n de Wallet</h3><p class="text-xs text-slate-500">Tu direcci&oacute;n p&uacute;blica en BSC</p></div>
-          </div>
-          <div class="flex gap-3">
-            <input type="text" id="acc-wallet-address" class="flex-1 bg-white/3 border border-white/8 text-slate-300 font-mono text-sm px-4 py-3 rounded-xl" value="No conectada" readonly>
-            <button onclick="navigator.clipboard.writeText(S.account||'');alert('Copiado')" class="btn-outline px-4 py-3 rounded-xl text-sm">Copiar</button>
-          </div>
+          <p class="text-xs text-gray-500 mt-6 text-center">Para aportar liquidez debes aprobar tus USDT primero. Todo el proceso es on-chain mediante el contrato NexumManager.</p>
         </div>
       </div>
     </section>
   </div>
-
-  <!-- INVESTOR DASHBOARD — ROI Calculator + Liquidity Pools -->
-  <div id="investor-section" class="section">
-    <section class="py-20 px-6">
-      <div class="max-w-6xl mx-auto">
-        <div class="text-center mb-14">
-          <p class="text-amber-400 font-semibold text-sm uppercase tracking-widest mb-3">Panel Inversores</p>
-          <h2 class="font-display text-4xl md:text-5xl font-bold text-white mb-4">Investor Dashboard</h2>
-          <p class="text-slate-400 text-lg max-w-3xl mx-auto">Aporta liquidez a las pools de Nexum y obt&eacute;n retornos garantizados al finalizar cada ronda. Capital + beneficios directo a tu wallet.</p>
-        </div>
-
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-          <div class="glass-gold rounded-2xl p-5 text-center"><p class="text-2xl font-bold text-white font-display" id="inv-total-deposited">$0.00</p><p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Total Depositado</p></div>
-          <div class="glass-emerald rounded-2xl p-5 text-center"><p class="text-2xl font-bold text-emerald-400 font-display" id="inv-total-earned">$0.00</p><p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Ganancias Totales</p></div>
-          <div class="glass rounded-2xl p-5 text-center"><p class="text-2xl font-bold text-blue-400 font-display" id="inv-active-pools">0</p><p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Pools Activas</p></div>
-          <div class="glass rounded-2xl p-5 text-center"><p class="text-2xl font-bold text-amber-400 font-display" id="inv-avg-roi">0%</p><p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">ROI Promedio</p></div>
-        </div>
-
-        <!-- ROI Calculator -->
-        <div class="glass rounded-3xl p-8 md:p-10 mb-10">
-          <div class="flex items-center gap-3 mb-6">
-            <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
-              <svg width="20" height="20" fill="none" stroke="#F59E0B" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h8M8 14h4"/></svg>
-            </div>
-            <div><h3 class="font-display text-xl font-bold text-white">Calculadora ROI</h3><p class="text-xs text-slate-500">Simula retornos potenciales por aportar liquidez</p></div>
-          </div>
-          <div class="grid md:grid-cols-3 gap-6 mb-6">
-            <div>
-              <label class="block text-sm text-slate-400 mb-2 font-medium">Monto de Inversi&oacute;n (USDT)</label>
-              <input type="number" id="roi-amount" value="1000" min="1" class="w-full bg-white/3 border border-white/8 text-white font-mono text-lg px-4 py-3 rounded-xl focus:border-amber-400/50 focus:outline-none transition">
-            </div>
-            <div>
-              <label class="block text-sm text-slate-400 mb-2 font-medium">Producto Nexum</label>
-              <select id="roi-product" class="w-full bg-white/3 border border-white/8 text-white text-sm px-4 py-3 rounded-xl focus:border-amber-400/50 focus:outline-none transition" style="background-color:#0F1629;">
-                <option value="0">&#9889; FLASH ($1)</option>
-                <option value="1" selected>&#127919; ORIGINAL ($1)</option>
-                <option value="2">&#128142; PREMIUM ($20)</option>
-                <option value="3">&#128640; ELITE ($10)</option>
-                <option value="4">&#128081; VIP ($200)</option>
-                <option value="5">&#11088; BLACKBLOK ($200)</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm text-slate-400 mb-2 font-medium">Per&iacute;odo (Rondas)</label>
-              <input type="number" id="roi-rounds" value="12" min="1" max="100" class="w-full bg-white/3 border border-white/8 text-white font-mono text-lg px-4 py-3 rounded-xl focus:border-amber-400/50 focus:outline-none transition">
-            </div>
-          </div>
-          <button onclick="calcROI()" class="btn-primary px-6 py-3 rounded-xl text-sm font-semibold mb-6">Calcular Retorno &rarr;</button>
-          <div id="roi-results" class="hidden">
-            <div class="border-t border-white/8 pt-6">
-              <div class="grid md:grid-cols-3 gap-4">
-                <div class="bg-white/3 rounded-xl p-4 border border-white/5 text-center"><p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Retorno Estimado</p><p class="text-2xl font-bold text-emerald-400 font-display" id="roi-return">$0.00</p></div>
-                <div class="bg-white/3 rounded-xl p-4 border border-white/5 text-center"><p class="text-xs text-slate-500 uppercase tracking-wide mb-1">ROI Total</p><p class="text-2xl font-bold text-amber-400 font-display" id="roi-percentage">0%</p></div>
-                <div class="bg-white/3 rounded-xl p-4 border border-white/5 text-center"><p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Capital + Ganancias</p><p class="text-2xl font-bold text-white font-display" id="roi-total">$0.00</p></div>
-              </div>
-              <p class="text-xs text-slate-600 mt-4 text-center">Simulaci&oacute;n basada en el modelo de distribuci&oacute;n del protocolo. Retornos reales pueden variar.</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Liquidity Pools -->
-        <div class="mb-6">
-          <div class="flex items-center gap-3 mb-6">
-            <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center">
-              <svg width="20" height="20" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-            </div>
-            <div><h3 class="font-display text-xl font-bold text-white">Pools de Liquidez Activas</h3><p class="text-xs text-slate-500">Aporta USDT &middot; Capital devuelto + ganancias al cierre</p></div>
-          </div>
-        </div>
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8" id="investor-pools-grid"></div>
-        <div class="glass rounded-2xl p-5 text-center">
-          <p class="text-slate-500 text-sm">Para aportar liquidez, primero debes aprobar tus USDT. Todo el proceso es on-chain mediante el contrato NexumManager.</p>
-        </div>
-      </div>
-    </section>
-  </div>
-
-
-
 
   <!-- EMBAJADORES SECTION -->
 <div id="ambassadors-section" class="section">
@@ -1158,85 +949,87 @@
     </section>
   </div>
 
-  <!-- TREASURY DEFI — Institutional Redesign -->
+  <!-- TREASURY & YIELD SECTION -->
   <div id="treasury-section" class="section">
-    <section class="py-20 px-6">
+    <section class="py-24 px-6">
       <div class="max-w-6xl mx-auto">
-        <div class="text-center mb-14">
-          <p class="text-blue-400 font-semibold text-sm uppercase tracking-widest mb-3">Gesti&oacute;n de Capital</p>
-          <h2 class="font-display text-4xl md:text-5xl font-bold text-white mb-4">Tesorer&iacute;a DeFi &amp; Yield</h2>
-          <p class="text-slate-400 text-lg max-w-2xl mx-auto">Generaci&oacute;n de rendimientos pasivos v&iacute;a protocolos DeFi auditados. Capital gestionado aut&oacute;nomamente por smart contracts.</p>
+        <div class="text-center mb-16">
+          <h2 class="text-5xl font-black font-mono neon-text text-[#00FF41] mb-6">TESORERÍA DEFI & YIELD</h2>
+          <p class="text-2xl text-gray-400">Generación de rendimientos pasivos vía AAVE y AIYield</p>
         </div>
 
-        <!-- TVL KPIs -->
+        <!-- TVL and APY Stats -->
         <div class="grid md:grid-cols-3 gap-6 mb-12">
-          <div class="glass rounded-2xl p-6 text-center card-hover">
-            <div class="w-12 h-12 rounded-xl bg-blue-500/15 flex items-center justify-center mx-auto mb-3">
-              <svg width="24" height="24" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-            </div>
-            <p class="text-xs text-slate-500 uppercase tracking-wide mb-2">Total Value Locked</p>
-            <p class="text-3xl font-bold text-white font-display">$<span id="tvl-amount">0.00</span></p>
-            <p class="text-xs text-slate-500 mt-2">Sincronizando on-chain...</p>
+          <div class="bg-black/60 backdrop-blur-xl border border-[#00FF41]/40 rounded-2xl p-6 text-center shadow-lg shadow-[#00FF41]/10">
+            <p class="text-gray-400 font-mono text-sm mb-2">TOTAL VALUE LOCKED (TVL)</p>
+            <p class="text-4xl font-black text-white">$<span id="tvl-amount">0.00</span></p>
+            <p class="text-yellow-400 text-xs mt-2">Sincronizando on-chain...</p>
           </div>
-          <div class="glass-blue rounded-2xl p-6 text-center card-hover" style="transform:scale(1.02);">
-            <div class="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center mx-auto mb-3">
-              <svg width="24" height="24" fill="none" stroke="#10B981" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-            </div>
-            <p class="text-xs text-blue-400 uppercase tracking-wide mb-2 font-semibold">APY Estimado</p>
-            <p class="text-3xl font-bold text-white font-display">Din&aacute;mico</p>
-            <p class="text-xs text-blue-400 mt-2">Basado en mercado (Aave/AIYield)</p>
+          <div class="bg-gradient-to-b from-[#00FF41]/20 to-black/60 border border-[#00FF41] rounded-2xl p-6 text-center shadow-lg shadow-[#00FF41]/20 transform scale-105">
+            <p class="text-[#00FF41] font-mono text-sm mb-2 font-bold">APY ESTIMADO</p>
+            <p class="text-5xl font-black text-white neon-text">Dinámico</p>
+            <p class="text-[#00FF41] text-xs mt-2">Basado en el mercado (Aave/AIYield)</p>
           </div>
-          <div class="glass rounded-2xl p-6 text-center card-hover">
-            <div class="w-12 h-12 rounded-xl bg-amber-500/15 flex items-center justify-center mx-auto mb-3">
-              <svg width="24" height="24" fill="none" stroke="#F59E0B" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-            </div>
-            <p class="text-xs text-slate-500 uppercase tracking-wide mb-2">Rendimiento Generado</p>
-            <p class="text-3xl font-bold text-white font-display">$<span id="yield-generated">0.00</span></p>
-            <p class="text-xs text-slate-500 mt-2">Acumulado total</p>
+          <div class="bg-black/60 backdrop-blur-xl border border-[#00FF41]/40 rounded-2xl p-6 text-center shadow-lg shadow-[#00FF41]/10">
+            <p class="text-gray-400 font-mono text-sm mb-2">RENDIMIENTO GENERADO</p>
+            <p class="text-4xl font-black text-white">$<span id="yield-generated">0.00</span></p>
+            <p class="text-yellow-400 text-xs mt-2">Cargando...</p>
           </div>
         </div>
 
-        <!-- Protocol Integrations -->
+        <!-- Integration Modules -->
         <div class="grid md:grid-cols-2 gap-8">
-          <!-- Aave -->
-          <div class="glass rounded-2xl p-8 card-hover" style="border-left:3px solid #B6509E;">
+          <!-- Aave Module -->
+          <div class="bg-gradient-to-br from-[#B6509E]/20 to-black/80 border border-[#B6509E] rounded-2xl p-8 hover:scale-105 transition">
             <div class="flex justify-between items-start mb-6">
               <div>
-                <h3 class="font-display text-xl font-bold text-white mb-1">Aave v3 Integration</h3>
-                <p class="text-sm font-medium" style="color:#B6509E;">Lending Protocol</p>
+                <h3 class="text-2xl font-black text-white mb-1">Aave v3 Integration</h3>
+                <p class="text-[#B6509E] text-sm font-bold">Lending Protocol</p>
               </div>
-              <span class="text-xs font-semibold px-3 py-1 rounded-full" style="background:rgba(182,80,158,0.15);color:#B6509E;border:1px solid rgba(182,80,158,0.3);">ACTIVO</span>
+              <div class="bg-[#B6509E] text-white px-3 py-1 rounded-full text-xs font-black">ACTIVO</div>
             </div>
-            <p class="text-slate-400 text-sm mb-6 leading-relaxed">El 40% de la tesorer&iacute;a se deposita autom&aacute;ticamente en Aave para generar rendimientos estables sobre USDC/USDT.</p>
+            <p class="text-gray-300 text-sm mb-6 leading-relaxed">
+              El 40% de la tesorería de NEXALO se deposita automáticamente en Aave para generar rendimientos estables sobre USDC/USDT.
+            </p>
             <div class="space-y-3">
-              <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-500 text-sm">Capital Asignado</span><span class="text-white font-semibold text-sm">40% del TVL</span></div>
-              <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-500 text-sm">Current APY</span><span class="font-semibold text-sm" style="color:#B6509E;">~4.2%</span></div>
-              <div class="flex justify-between"><span class="text-slate-500 text-sm">Estrategia</span><span class="text-white font-semibold text-sm">Supply USDT/USDC</span></div>
+              <div class="flex justify-between border-b border-gray-700 pb-2">
+                <span class="text-gray-400">Capital Asignado</span>
+                <span class="text-white font-bold">$498,240</span>
+              </div>
+              <div class="flex justify-between border-b border-gray-700 pb-2">
+                <span class="text-gray-400">Current APY</span>
+                <span class="text-[#B6509E] font-bold">4.2%</span>
+              </div>
             </div>
           </div>
-          <!-- AIYield -->
-          <div class="glass rounded-2xl p-8 card-hover" style="border-left:3px solid #38BDF8;">
+
+          <!-- AIYield Module -->
+          <div class="bg-gradient-to-br from-[#00F3FF]/20 to-black/80 border border-[#00F3FF] rounded-2xl p-8 hover:scale-105 transition">
             <div class="flex justify-between items-start mb-6">
               <div>
-                <h3 class="font-display text-xl font-bold text-white mb-1">AIYield Optimizer</h3>
-                <p class="text-sm font-medium" style="color:#38BDF8;">Algorithmic Farming</p>
+                <h3 class="text-2xl font-black text-white mb-1">AIYield Optimizer</h3>
+                <p class="text-[#00F3FF] text-sm font-bold">Algorithmic Farming</p>
               </div>
-              <span class="text-xs font-semibold px-3 py-1 rounded-full" style="background:rgba(56,189,248,0.15);color:#38BDF8;border:1px solid rgba(56,189,248,0.3);">ACTIVO</span>
+              <div class="bg-[#00F3FF] text-black px-3 py-1 rounded-full text-xs font-black">ACTIVO</div>
             </div>
-            <p class="text-slate-400 text-sm mb-6 leading-relaxed">El 60% de la tesorer&iacute;a utiliza AIYield para encontrar las pools de liquidez m&aacute;s eficientes en BSC, rebalanceando autom&aacute;ticamente.</p>
+            <p class="text-gray-300 text-sm mb-6 leading-relaxed">
+              El 60% de la tesorería utiliza AIYield para encontrar las pools de liquidez más eficientes en BSC, rebalanceando automáticamente para maximizar retornos minimizando el Impermanent Loss.
+            </p>
             <div class="space-y-3">
-              <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-500 text-sm">Capital Asignado</span><span class="text-white font-semibold text-sm">60% del TVL</span></div>
-              <div class="flex justify-between border-b border-white/5 pb-2"><span class="text-slate-500 text-sm">Current APY</span><span class="font-semibold text-sm" style="color:#38BDF8;">~11.3%</span></div>
-              <div class="flex justify-between"><span class="text-slate-500 text-sm">Estrategia</span><span class="text-white font-semibold text-sm">Multi-pool LP</span></div>
+              <div class="flex justify-between border-b border-gray-700 pb-2">
+                <span class="text-gray-400">Capital Asignado</span>
+                <span class="text-white font-bold">$747,360</span>
+              </div>
+              <div class="flex justify-between border-b border-gray-700 pb-2">
+                <span class="text-gray-400">Current APY</span>
+                <span class="text-[#00F3FF] font-bold">11.3%</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </section>
   </div>
-
-
-
 
   <!-- IMPACTO GLOBAL SECTION -->
   <div id="impact-section" class="section">
@@ -1285,76 +1078,44 @@
     </section>
   </div>
 
-  <!-- STAKING NXL — Institutional Redesign -->
+  <!-- STAKING SECTION -->
   <div id="staking-section" class="section">
-    <section class="py-20 px-6">
+    <section class="py-24 px-6">
       <div class="max-w-5xl mx-auto">
-        <div class="text-center mb-14">
-          <p class="text-blue-400 font-semibold text-sm uppercase tracking-widest mb-3">Rendimiento Pasivo</p>
-          <h2 class="font-display text-4xl md:text-5xl font-bold text-white mb-4">Staking NXL</h2>
-          <p class="text-slate-400 text-lg max-w-2xl mx-auto">Haz stake de tus tokens NXL para generar ingresos pasivos en WBTC (Bitcoin). Dividendos inyectados autom&aacute;ticamente desde TreasuryBTC.</p>
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-8 mb-10">
-          <!-- Staking Panel -->
-          <div class="glass rounded-2xl p-8 card-hover">
-            <div class="flex items-center gap-3 mb-6">
-              <div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
-                <svg width="20" height="20" fill="none" stroke="#10B981" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 10l4-4 4 4"/></svg>
-              </div>
-              <div><h3 class="font-display text-lg font-bold text-white">Tu Staking de NXL</h3><p class="text-xs text-slate-500">Deposita NXL &middot; Genera WBTC</p></div>
+        <h2 class="text-5xl font-black font-mono text-center neon-text text-[#00FF41] mb-12">STAKING NXL</h2>
+        <div class="grid md:grid-cols-2 gap-8 mb-12">
+          <!-- STAKING PANEL -->
+          <div class="bg-black/60 backdrop-blur-xl border border-[#00FF41] rounded-2xl p-8">
+            <h3 class="text-2xl font-black text-white mb-6">Tu Staking de NXL</h3>
+            <p class="text-gray-400 text-sm mb-6">Haz stake de tus tokens NXL para generar ingresos pasivos en WBTC (Bitcoin).</p>
+            
+            <div class="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-gray-700 mb-6">
+              <span class="text-gray-300 font-bold">NXL en Stake:</span>
+              <span class="text-3xl font-black text-[#00FF41]">0.00</span>
             </div>
-
-            <div class="bg-white/3 border border-white/5 rounded-xl p-4 mb-6 flex justify-between items-center">
-              <span class="text-slate-400 text-sm font-medium">NXL en Stake:</span>
-              <span class="text-2xl font-bold text-emerald-400 font-display" id="staking-nxl-amount">0.00</span>
-            </div>
-
-            <div class="flex gap-3 mb-4">
-              <input type="number" id="staking-input" placeholder="Cantidad de NXL" class="flex-1 bg-white/3 border border-white/8 text-white text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-400/50 transition font-mono">
-              <button onclick="stakeNXL()" class="btn-emerald px-5 py-3 rounded-xl text-sm font-semibold">STAKE</button>
-            </div>
-
-            <div class="flex gap-3">
-              <button onclick="unstakeNXL()" class="flex-1 btn-outline py-2 rounded-xl text-sm">Unstake</button>
-              <button onclick="stakeMaxNXL()" class="flex-1 btn-outline py-2 rounded-xl text-sm">MAX</button>
+            
+            <div class="flex gap-4">
+              <input type="number" placeholder="Cantidad de NXL" class="flex-1 bg-black/50 border border-gray-700 text-white rounded-lg px-4 py-2">
+              <button class="bg-gradient-to-r from-[#00FF41] to-[#00cc33] text-black font-black px-6 py-2 rounded-lg hover:scale-105 transition">STAKE</button>
             </div>
           </div>
-
-          <!-- Rewards Panel -->
-          <div class="glass rounded-2xl p-8 card-hover" style="border-top:3px solid #F59E0B;">
-            <div class="flex items-center gap-3 mb-6">
-              <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
-                <svg width="20" height="20" fill="none" stroke="#F59E0B" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-              </div>
-              <div><h3 class="font-display text-lg font-bold text-white">Recompensas WBTC</h3><p class="text-xs text-slate-500">Dividendos aut&oacute;nomos del TreasuryBTC</p></div>
+          
+          <!-- REWARDS PANEL -->
+          <div class="bg-black/60 backdrop-blur-xl border border-yellow-400 rounded-2xl p-8">
+            <h3 class="text-2xl font-black text-white mb-6">Recompensas (WBTC)</h3>
+            <p class="text-gray-400 text-sm mb-6">El TreasuryBTC inyecta dividendos aquí de manera autónoma provenientes del yield generado.</p>
+            
+            <div class="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-gray-700 mb-6">
+              <span class="text-gray-300 font-bold">WBTC Generado:</span>
+              <span class="text-3xl font-black text-yellow-400">0.00000000</span>
             </div>
-
-            <div class="bg-white/3 border border-white/5 rounded-xl p-4 mb-6 flex justify-between items-center">
-              <span class="text-slate-400 text-sm font-medium">WBTC Generado:</span>
-              <span class="text-2xl font-bold text-amber-400 font-display" id="staking-wbtc-earned">0.00000000</span>
-            </div>
-
-            <button onclick="claimStakingRewards()" class="w-full btn-primary py-3 rounded-xl text-sm font-semibold mb-4">Reclamar WBTC &rarr;</button>
-
-            <div class="space-y-2 text-sm">
-              <div class="flex justify-between"><span class="text-slate-500">APY Estimado</span><span class="text-emerald-400 font-semibold">Variable</span></div>
-              <div class="flex justify-between"><span class="text-slate-500">Fuente</span><span class="text-slate-300 font-semibold">Treasury Yield</span></div>
-              <div class="flex justify-between"><span class="text-slate-500">Frecuencia</span><span class="text-slate-300 font-semibold">Cada ronda</span></div>
-            </div>
+            
+            <button class="w-full bg-yellow-400 text-black font-black px-6 py-3 rounded-lg hover:scale-105 transition mt-auto">RECLAMAR WBTC</button>
           </div>
-        </div>
-
-        <!-- Info -->
-        <div class="glass rounded-2xl p-6 text-center">
-          <p class="text-slate-500 text-sm">El staking NXL no tiene lock period. Puedes retirar en cualquier momento. Los dividendos WBTC se acumulan por ronda desde el TreasuryBTC.</p>
         </div>
       </div>
     </section>
   </div>
-
-
-
 
   <!-- VIDEOS SECTION -->
   <div id="videos-section" class="section">
@@ -1544,48 +1305,58 @@
     </section>
   </div>
 
-  <!-- FAQ / CHAT — Institutional Redesign -->
+  <!-- FAQ / CHAT SECTION -->
   <div id="faq-section" class="section">
-    <section class="py-20 px-6">
+    <section class="py-16 px-4 min-h-screen">
       <div class="max-w-4xl mx-auto">
-        <div class="text-center mb-14">
-          <p class="text-blue-400 font-semibold text-sm uppercase tracking-widest mb-3">Soporte</p>
-          <h2 class="font-display text-4xl md:text-5xl font-bold text-white mb-4">Preguntas Frecuentes</h2>
-          <p class="text-slate-400 text-lg max-w-2xl mx-auto">&iquest;Tienes dudas? Busca en las respuestas m&aacute;s comunes o escr&iacute;benos directamente.</p>
+        <div class="text-center mb-12">
+          <h2 class="text-5xl font-black font-mono neon-text text-[#00FF41] mb-4">PREGUNTAS FRECUENTES</h2>
+          <p class="text-xl text-gray-400">¿Tienes dudas? Escríbenos o busca en las respuestas más comunes</p>
         </div>
 
-        <!-- FAQ Accordion -->
+        <!-- FAQ ACCORDION -->
         <div id="faq-list" class="space-y-3 mb-12"></div>
 
-        <!-- Chat -->
-        <div class="glass rounded-2xl overflow-hidden">
-          <div class="px-6 py-4 border-b border-white/5 flex items-center gap-3" style="background:linear-gradient(90deg, rgba(59,130,246,0.08) 0%, transparent 100%);">
-            <div class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></div>
-            <span class="font-display font-bold text-white text-sm">NEXALO ASSISTANT</span>
-            <span class="ml-auto text-xs text-slate-500">Respuestas instant&aacute;neas</span>
+        <!-- CHAT INTERACTIVO -->
+        <div class="bg-black/60 backdrop-blur-xl border border-[#00FF41]/40 rounded-2xl overflow-hidden shadow-2xl">
+          <div class="bg-gradient-to-r from-[#00FF41]/20 to-transparent px-6 py-4 border-b border-[#00FF41]/20 flex items-center gap-3">
+            <div class="w-3 h-3 rounded-full bg-[#00FF41] animate-pulse"></div>
+            <span class="font-black text-[#00FF41] font-mono">NEXALO ASSISTANT</span>
+            <span class="ml-auto text-xs text-gray-400">Respuestas instantáneas</span>
           </div>
 
-          <div id="chat-messages" class="h-80 overflow-y-auto p-6 space-y-4">
+          <!-- MESSAGES -->
+          <div id="chat-messages" class="h-80 overflow-y-auto p-6 space-y-4 scrollbar-thin">
             <div class="flex gap-3">
-              <div class="w-8 h-8 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
-                <svg width="14" height="14" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
-              </div>
-              <div class="bg-blue-500/8 border border-blue-500/15 rounded-2xl rounded-tl-none px-4 py-3 max-w-[80%]">
-                <p class="text-slate-300 text-sm">&iexcl;Hola! Soy el asistente de NEXALO. Puedo responder tus preguntas sobre el protocolo, c&oacute;mo comprar tickets, c&oacute;mo funciona el VRF, NXL tokens y m&aacute;s. &iquest;En qu&eacute; puedo ayudarte?</p>
-                <p class="text-blue-400/50 text-xs mt-1">NEXALO Bot</p>
+              <div class="w-8 h-8 rounded-full bg-[#00FF41]/20 border border-[#00FF41]/40 flex items-center justify-center flex-shrink-0 text-sm">⚡</div>
+              <div class="bg-[#00FF41]/10 border border-[#00FF41]/20 rounded-2xl rounded-tl-none px-4 py-3 max-w-[80%]">
+                <p class="text-gray-200 text-sm">¡Hola! Soy el asistente de NEXALO. Puedo responder tus preguntas sobre el protocolo, cómo comprar tickets, cómo funciona el VRF, NXL tokens y más. ¿En qué puedo ayudarte?</p>
+                <p class="text-[#00FF41]/50 text-xs mt-1">NEXALO Bot</p>
               </div>
             </div>
           </div>
 
+          <!-- QUICK QUESTIONS -->
           <div class="px-6 pb-3">
-            <p class="text-xs text-slate-600 mb-2">Preguntas r&aacute;pidas:</p>
+            <p class="text-xs text-gray-500 mb-2">Preguntas rápidas:</p>
             <div id="quick-chips" class="flex flex-wrap gap-2"></div>
           </div>
 
+          <!-- INPUT -->
           <div class="px-6 pb-6">
             <div class="flex gap-3">
-              <input id="chat-input" type="text" placeholder="Escribe tu pregunta..." class="flex-1 bg-white/3 border border-white/8 text-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400/30 transition" maxlength="200" onkeydown="if(event.key==='Enter') sendChatMessage()">
-              <button onclick="sendChatMessage()" class="btn-primary px-5 py-3 rounded-xl text-sm font-semibold">ENVIAR</button>
+              <input
+                id="chat-input"
+                type="text"
+                placeholder="Escribe tu pregunta..."
+                class="flex-1 bg-black/50 border border-[#00FF41]/30 text-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#00FF41] transition"
+                maxlength="200"
+                onkeydown="if(event.key==='Enter') sendChatMessage()"
+              />
+              <button
+                onclick="sendChatMessage()"
+                class="bg-gradient-to-r from-[#00FF41] to-[#00cc33] text-black px-5 py-3 rounded-xl font-black hover:scale-105 transition text-sm"
+              >ENVIAR</button>
             </div>
           </div>
         </div>
@@ -1593,74 +1364,10 @@
     </section>
   </div>
 
-
-
-
-  <!-- FOOTER — Institutional -->
-  <footer class="relative z-10 border-t border-white/5" style="background:linear-gradient(180deg, #060810 0%, #030508 100%);">
-    <div class="max-w-7xl mx-auto px-6 py-16">
-      <div class="grid md:grid-cols-4 gap-12 mb-12">
-        <!-- Brand -->
-        <div class="md:col-span-1">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
-              <span class="font-display font-black text-white text-lg">N</span>
-            </div>
-            <div>
-              <h3 class="font-display text-xl font-extrabold text-white">NEXALO</h3>
-              <p class="text-xs text-slate-600">DeFi Protocol</p>
-            </div>
-          </div>
-          <p class="text-slate-500 text-sm leading-relaxed">Protocolo DeFi aut&oacute;nomo de loter&iacute;a en BNB Chain. 100% on-chain, auditable, sin intermediarios humanos.</p>
-        </div>
-
-        <!-- Protocol -->
-        <div>
-          <h4 class="font-semibold text-white text-sm uppercase tracking-wider mb-4">Protocolo</h4>
-          <ul class="space-y-2 text-sm">
-            <li><a href="#" onclick="showSection('home');return false;" class="text-slate-500 hover:text-blue-400 transition">Inicio</a></li>
-            <li><a href="#" onclick="showSection('account');return false;" class="text-slate-500 hover:text-blue-400 transition">Mi Cuenta</a></li>
-            <li><a href="#" onclick="showSection('investor');return false;" class="text-slate-500 hover:text-blue-400 transition">Inversores</a></li>
-            <li><a href="#" onclick="showSection('staking');return false;" class="text-slate-500 hover:text-blue-400 transition">Staking NXL</a></li>
-          </ul>
-        </div>
-
-        <!-- Resources -->
-        <div>
-          <h4 class="font-semibold text-white text-sm uppercase tracking-wider mb-4">Recursos</h4>
-          <ul class="space-y-2 text-sm">
-            <li><a href="#" onclick="showSection('treasury');return false;" class="text-slate-500 hover:text-blue-400 transition">Tesorer&iacute;a DeFi</a></li>
-            <li><a href="#" onclick="showSection('faq');return false;" class="text-slate-500 hover:text-blue-400 transition">FAQ &amp; Soporte</a></li>
-            <li><a href="#" onclick="showSection('ambassadors');return false;" class="text-slate-500 hover:text-blue-400 transition">Embajadores</a></li>
-            <li><a href="#" onclick="showSection('impact');return false;" class="text-slate-500 hover:text-blue-400 transition">Impacto Global</a></li>
-          </ul>
-        </div>
-
-        <!-- Security -->
-        <div>
-          <h4 class="font-semibold text-white text-sm uppercase tracking-wider mb-4">Seguridad</h4>
-          <ul class="space-y-2 text-sm">
-            <li class="text-slate-500 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>Chainlink VRF</li>
-            <li class="text-slate-500 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-blue-400 inline-block"></span>OpenZeppelin</li>
-            <li class="text-slate-500 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-purple-400 inline-block"></span>Immutable Contract</li>
-            <li class="text-slate-500 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>BSC Testnet</li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- Bottom bar -->
-      <div class="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-        <p class="text-slate-600 text-sm">&copy; 2025 NEXALO Protocol &mdash; Powered by BNB Chain</p>
-        <div class="flex items-center gap-4">
-          <span class="flex items-center gap-2 text-xs text-slate-600">
-            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-            BSC Testnet &mdash; Usa tBNB del faucet
-          </span>
-        </div>
-      </div>
-    </div>
+  <footer class="py-12 px-6 bg-black border-t border-gray-800 text-center">
+    <p class="text-gray-500 font-mono">© 2025 NEXALO - Powered by BSC Testnet</p>
+    <p class="text-gray-600 font-mono text-sm mt-2">⚠️ Actualmente en BSC Testnet - Usa tBNB del faucet</p>
   </footer>
-
 
  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
@@ -2494,33 +2201,7 @@
   window.claimStableFromManager = claimStableFromManager;
   window.claimNXLFromManager = claimNXLFromManager;
   window.redeemNXL = redeemNXLFrontend;
-
-  // Staking stubs
-  async function stakeNXL() {
-    alert('Staking NXL en integración final. El contrato StakingVault será desplegado en mainnet.');
-  }
-  async function unstakeNXL() {
-    alert('Unstake NXL en integración final.');
-  }
-  async function stakeMaxNXL() {
-    if (!S.nxlRead || !S.account) { alert('Conecta tu wallet'); return; }
-    try {
-      const bal = await S.nxlRead.balanceOf(S.account);
-      const dec = await S.nxlRead.decimals();
-      var inp = document.getElementById('staking-input');
-      if (inp) inp.value = ethers.utils.formatUnits(bal, dec);
-    } catch(e) { console.warn(e); }
-  }
-  async function claimStakingRewards() {
-    alert('Claim WBTC en integración final. El contrato StakingVault será desplegado en mainnet.');
-  }
-  window.stakeNXL = stakeNXL;
-  window.unstakeNXL = unstakeNXL;
-  window.stakeMaxNXL = stakeMaxNXL;
-  window.claimStakingRewards = claimStakingRewards;
-
 </script>
-  <script src="./js/helpers.js"></script>
   <script src="./js/i18n.js"></script>
   <script src="./js/faq-chat.js"></script>
 </body>

@@ -1,0 +1,67 @@
+  <!-- STAKING NXL — Institutional Redesign -->
+  <div id="staking-section" class="section">
+    <section class="py-20 px-6">
+      <div class="max-w-5xl mx-auto">
+        <div class="text-center mb-14">
+          <p class="text-blue-400 font-semibold text-sm uppercase tracking-widest mb-3">Rendimiento Pasivo</p>
+          <h2 class="font-display text-4xl md:text-5xl font-bold text-white mb-4">Staking NXL</h2>
+          <p class="text-slate-400 text-lg max-w-2xl mx-auto">Haz stake de tus tokens NXL para generar ingresos pasivos en WBTC (Bitcoin). Dividendos inyectados autom&aacute;ticamente desde TreasuryBTC.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8 mb-10">
+          <!-- Staking Panel -->
+          <div class="glass rounded-2xl p-8 card-hover">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+                <svg width="20" height="20" fill="none" stroke="#10B981" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 10l4-4 4 4"/></svg>
+              </div>
+              <div><h3 class="font-display text-lg font-bold text-white">Tu Staking de NXL</h3><p class="text-xs text-slate-500">Deposita NXL &middot; Genera WBTC</p></div>
+            </div>
+
+            <div class="bg-white/3 border border-white/5 rounded-xl p-4 mb-6 flex justify-between items-center">
+              <span class="text-slate-400 text-sm font-medium">NXL en Stake:</span>
+              <span class="text-2xl font-bold text-emerald-400 font-display" id="staking-nxl-amount">0.00</span>
+            </div>
+
+            <div class="flex gap-3 mb-4">
+              <input type="number" id="staking-input" placeholder="Cantidad de NXL" class="flex-1 bg-white/3 border border-white/8 text-white text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-400/50 transition font-mono">
+              <button onclick="stakeNXL()" class="btn-emerald px-5 py-3 rounded-xl text-sm font-semibold">STAKE</button>
+            </div>
+
+            <div class="flex gap-3">
+              <button onclick="unstakeNXL()" class="flex-1 btn-outline py-2 rounded-xl text-sm">Unstake</button>
+              <button onclick="stakeMaxNXL()" class="flex-1 btn-outline py-2 rounded-xl text-sm">MAX</button>
+            </div>
+          </div>
+
+          <!-- Rewards Panel -->
+          <div class="glass rounded-2xl p-8 card-hover" style="border-top:3px solid #F59E0B;">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
+                <svg width="20" height="20" fill="none" stroke="#F59E0B" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              </div>
+              <div><h3 class="font-display text-lg font-bold text-white">Recompensas WBTC</h3><p class="text-xs text-slate-500">Dividendos aut&oacute;nomos del TreasuryBTC</p></div>
+            </div>
+
+            <div class="bg-white/3 border border-white/5 rounded-xl p-4 mb-6 flex justify-between items-center">
+              <span class="text-slate-400 text-sm font-medium">WBTC Generado:</span>
+              <span class="text-2xl font-bold text-amber-400 font-display" id="staking-wbtc-earned">0.00000000</span>
+            </div>
+
+            <button onclick="claimStakingRewards()" class="w-full btn-primary py-3 rounded-xl text-sm font-semibold mb-4">Reclamar WBTC &rarr;</button>
+
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between"><span class="text-slate-500">APY Estimado</span><span class="text-emerald-400 font-semibold">Variable</span></div>
+              <div class="flex justify-between"><span class="text-slate-500">Fuente</span><span class="text-slate-300 font-semibold">Treasury Yield</span></div>
+              <div class="flex justify-between"><span class="text-slate-500">Frecuencia</span><span class="text-slate-300 font-semibold">Cada ronda</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info -->
+        <div class="glass rounded-2xl p-6 text-center">
+          <p class="text-slate-500 text-sm">El staking NXL no tiene lock period. Puedes retirar en cualquier momento. Los dividendos WBTC se acumulan por ronda desde el TreasuryBTC.</p>
+        </div>
+      </div>
+    </section>
+  </div>

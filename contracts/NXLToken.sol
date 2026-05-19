@@ -93,8 +93,9 @@ contract NXLToken is ERC20 {
     // ======= One-time config =======
 
     /// @notice Set the NexumManager address exactly once. Must be called by deployer immediately post-deploy.
-    /// @dev Security: guarded by nexumManager == address(0) — can only be set once, permanently locks afterwards.
+    /// @dev MED-02 FIX: Only founder (deployer) can set this — prevents frontrunning between deploy and config.
     function setNexumManager(address _nexumManager) external {
+        require(msg.sender == founderAddress, "Only founder");
         require(nexumManager == address(0), "Manager already set");
         require(_nexumManager != address(0), "Invalid nexumManager");
         require(_nexumManager.code.length > 0, "NexumManager must be contract");

@@ -38,6 +38,14 @@ module.exports = {
       accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
       chainId: 97,
     },
+    bsc: {
+      url:
+        process.env.BSC_MAINNET_RPC_URL ||
+        "https://bsc-dataseed1.binance.org/",
+      accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
+      chainId: 56,
+      gasPrice: 3_000_000_000, // 3 gwei
+    },
   },
 
   etherscan: {

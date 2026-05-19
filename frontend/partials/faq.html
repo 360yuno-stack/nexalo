@@ -1,0 +1,48 @@
+  <!-- FAQ / CHAT — Institutional Redesign -->
+  <div id="faq-section" class="section">
+    <section class="py-20 px-6">
+      <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-14">
+          <p class="text-blue-400 font-semibold text-sm uppercase tracking-widest mb-3">Soporte</p>
+          <h2 class="font-display text-4xl md:text-5xl font-bold text-white mb-4">Preguntas Frecuentes</h2>
+          <p class="text-slate-400 text-lg max-w-2xl mx-auto">&iquest;Tienes dudas? Busca en las respuestas m&aacute;s comunes o escr&iacute;benos directamente.</p>
+        </div>
+
+        <!-- FAQ Accordion -->
+        <div id="faq-list" class="space-y-3 mb-12"></div>
+
+        <!-- Chat -->
+        <div class="glass rounded-2xl overflow-hidden">
+          <div class="px-6 py-4 border-b border-white/5 flex items-center gap-3" style="background:linear-gradient(90deg, rgba(59,130,246,0.08) 0%, transparent 100%);">
+            <div class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></div>
+            <span class="font-display font-bold text-white text-sm">NEXALO ASSISTANT</span>
+            <span class="ml-auto text-xs text-slate-500">Respuestas instant&aacute;neas</span>
+          </div>
+
+          <div id="chat-messages" class="h-80 overflow-y-auto p-6 space-y-4">
+            <div class="flex gap-3">
+              <div class="w-8 h-8 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+                <svg width="14" height="14" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
+              </div>
+              <div class="bg-blue-500/8 border border-blue-500/15 rounded-2xl rounded-tl-none px-4 py-3 max-w-[80%]">
+                <p class="text-slate-300 text-sm">&iexcl;Hola! Soy el asistente de NEXALO. Puedo responder tus preguntas sobre el protocolo, c&oacute;mo comprar tickets, c&oacute;mo funciona el VRF, NXL tokens y m&aacute;s. &iquest;En qu&eacute; puedo ayudarte?</p>
+                <p class="text-blue-400/50 text-xs mt-1">NEXALO Bot</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="px-6 pb-3">
+            <p class="text-xs text-slate-600 mb-2">Preguntas r&aacute;pidas:</p>
+            <div id="quick-chips" class="flex flex-wrap gap-2"></div>
+          </div>
+
+          <div class="px-6 pb-6">
+            <div class="flex gap-3">
+              <input id="chat-input" type="text" placeholder="Escribe tu pregunta..." class="flex-1 bg-white/3 border border-white/8 text-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400/30 transition" maxlength="200" onkeydown="if(event.key==='Enter') sendChatMessage()">
+              <button onclick="sendChatMessage()" class="btn-primary px-5 py-3 rounded-xl text-sm font-semibold">ENVIAR</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>

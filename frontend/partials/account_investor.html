@@ -1,0 +1,190 @@
+  </div> <!-- close home-section -->
+
+  <!-- MI CUENTA SECTION — Institutional Portfolio Dashboard -->
+  <div id="account-section" class="section">
+    <section class="py-20 px-6">
+      <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-14">
+          <p class="text-blue-400 font-semibold text-sm uppercase tracking-widest mb-3">Panel Personal</p>
+          <h2 class="font-display text-4xl md:text-5xl font-bold text-white mb-4">Mi Cuenta</h2>
+          <p class="text-slate-400 text-lg max-w-2xl mx-auto">Gestiona tu portafolio, reclama recompensas y monitorea tu actividad on-chain en tiempo real.</p>
+        </div>
+
+        <div id="account-no-wallet" class="glass-blue rounded-2xl p-6 text-center mb-10">
+          <div class="flex items-center justify-center gap-3 mb-3">
+            <svg width="24" height="24" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+            <span class="text-blue-400 font-semibold">Wallet No Conectada</span>
+          </div>
+          <p class="text-slate-400 text-sm mb-4">Conecta tu wallet para ver tu portafolio completo y reclamar recompensas.</p>
+          <button onclick="openWalletSelectModal()" class="btn-primary px-6 py-3 rounded-xl text-sm">Conectar Wallet &rarr;</button>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+          <div class="glass rounded-2xl p-5 text-center card-hover">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center mx-auto mb-3">
+              <svg width="20" height="20" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            </div>
+            <p class="text-2xl font-bold text-white font-display" id="acc-usdt-balance">$0.00</p>
+            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Balance USDT</p>
+          </div>
+          <div class="glass rounded-2xl p-5 text-center card-hover">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center mx-auto mb-3">
+              <svg width="20" height="20" fill="none" stroke="#10B981" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 10l4-4 4 4"/></svg>
+            </div>
+            <p class="text-2xl font-bold text-emerald-400 font-display" id="nxl-balance">0.00</p>
+            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Balance NXL</p>
+          </div>
+          <div class="glass rounded-2xl p-5 text-center card-hover">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center mx-auto mb-3">
+              <svg width="20" height="20" fill="none" stroke="#F59E0B" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2M12 2v2m0 16v2"/></svg>
+            </div>
+            <p class="text-2xl font-bold text-amber-400 font-display" id="acc-claimable-usdt">$0.00</p>
+            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">USDT Reclamable</p>
+          </div>
+          <div class="glass rounded-2xl p-5 text-center card-hover">
+            <div class="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center mx-auto mb-3">
+              <svg width="20" height="20" fill="none" stroke="#A78BFA" stroke-width="2" viewBox="0 0 24 24"><path d="M20 12V8H6a2 2 0 010-4h12V0"/><path d="M4 6v12a2 2 0 002 2h14v-4"/><circle cx="18" cy="16" r="2"/></svg>
+            </div>
+            <p class="text-2xl font-bold text-purple-400 font-display" id="acc-claimable-nxl">0.00</p>
+            <p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">NXL Reclamable</p>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6 mb-10">
+          <div class="glass rounded-2xl p-6 card-hover">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
+                <svg width="20" height="20" fill="none" stroke="#F59E0B" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              </div>
+              <div><h3 class="font-semibold text-white">Reclamar USDT</h3><p class="text-xs text-slate-500">Premios y recompensas instantáneas</p></div>
+            </div>
+            <p class="text-slate-400 text-sm mb-4">Reclama tus ganancias acumuladas de premios, recompensas instantáneas y comisiones del protocolo.</p>
+            <button onclick="claimStableFromManager()" class="w-full btn-primary py-3 rounded-xl text-sm font-semibold">Reclamar USDT &rarr;</button>
+          </div>
+          <div class="glass rounded-2xl p-6 card-hover">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+                <svg width="20" height="20" fill="none" stroke="#10B981" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 10l4-4 4 4"/></svg>
+              </div>
+              <div><h3 class="font-semibold text-white">Reclamar NXL</h3><p class="text-xs text-slate-500">Tokens por participación</p></div>
+            </div>
+            <p class="text-slate-400 text-sm mb-4">Reclama tokens NXL ganados por compra de tickets. Cada número comprado genera rewards en NXL.</p>
+            <button onclick="claimNXLFromManager()" class="w-full btn-emerald py-3 rounded-xl text-sm font-semibold">Reclamar NXL &rarr;</button>
+          </div>
+        </div>
+
+        <div class="glass rounded-2xl p-8 mb-10">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center">
+              <svg width="20" height="20" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            </div>
+            <div><h3 class="font-display text-xl font-bold text-white">Red de Referidos</h3><p class="text-xs text-slate-500">Sistema multinivel &middot; 3 niveles &middot; 10% del capital</p></div>
+          </div>
+          <div class="grid md:grid-cols-3 gap-6">
+            <div class="bg-white/3 rounded-xl p-4 border border-white/5">
+              <p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Mi Referidor</p>
+              <p class="text-sm text-white font-mono truncate" id="my-referrer">&mdash;</p>
+            </div>
+            <div class="bg-white/3 rounded-xl p-4 border border-white/5">
+              <p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Cadena de Referidos</p>
+              <p class="text-xs text-slate-300 font-mono truncate" id="my-chain">&mdash;</p>
+            </div>
+            <div class="bg-white/3 rounded-xl p-4 border border-white/5">
+              <p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Comisiones Disponibles</p>
+              <p class="text-lg font-bold text-emerald-400" id="ref-claimable">$0.00</p>
+              <button onclick="claimReferral()" class="mt-2 text-xs text-blue-400 hover:text-blue-300 font-semibold transition">Reclamar &rarr;</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass rounded-2xl p-6">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-xl bg-slate-500/15 flex items-center justify-center">
+              <svg width="20" height="20" fill="none" stroke="#94A3B8" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            </div>
+            <div><h3 class="font-semibold text-white">Direcci&oacute;n de Wallet</h3><p class="text-xs text-slate-500">Tu direcci&oacute;n p&uacute;blica en BSC</p></div>
+          </div>
+          <div class="flex gap-3">
+            <input type="text" id="acc-wallet-address" class="flex-1 bg-white/3 border border-white/8 text-slate-300 font-mono text-sm px-4 py-3 rounded-xl" value="No conectada" readonly>
+            <button onclick="navigator.clipboard.writeText(S.account||'');alert('Copiado')" class="btn-outline px-4 py-3 rounded-xl text-sm">Copiar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- INVESTOR DASHBOARD — ROI Calculator + Liquidity Pools -->
+  <div id="investor-section" class="section">
+    <section class="py-20 px-6">
+      <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-14">
+          <p class="text-amber-400 font-semibold text-sm uppercase tracking-widest mb-3">Panel Inversores</p>
+          <h2 class="font-display text-4xl md:text-5xl font-bold text-white mb-4">Investor Dashboard</h2>
+          <p class="text-slate-400 text-lg max-w-3xl mx-auto">Aporta liquidez a las pools de Nexum y obt&eacute;n retornos garantizados al finalizar cada ronda. Capital + beneficios directo a tu wallet.</p>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+          <div class="glass-gold rounded-2xl p-5 text-center"><p class="text-2xl font-bold text-white font-display" id="inv-total-deposited">$0.00</p><p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Total Depositado</p></div>
+          <div class="glass-emerald rounded-2xl p-5 text-center"><p class="text-2xl font-bold text-emerald-400 font-display" id="inv-total-earned">$0.00</p><p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Ganancias Totales</p></div>
+          <div class="glass rounded-2xl p-5 text-center"><p class="text-2xl font-bold text-blue-400 font-display" id="inv-active-pools">0</p><p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">Pools Activas</p></div>
+          <div class="glass rounded-2xl p-5 text-center"><p class="text-2xl font-bold text-amber-400 font-display" id="inv-avg-roi">0%</p><p class="text-xs text-slate-500 mt-1 uppercase tracking-wide">ROI Promedio</p></div>
+        </div>
+
+        <!-- ROI Calculator -->
+        <div class="glass rounded-3xl p-8 md:p-10 mb-10">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
+              <svg width="20" height="20" fill="none" stroke="#F59E0B" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h8M8 14h4"/></svg>
+            </div>
+            <div><h3 class="font-display text-xl font-bold text-white">Calculadora ROI</h3><p class="text-xs text-slate-500">Simula retornos potenciales por aportar liquidez</p></div>
+          </div>
+          <div class="grid md:grid-cols-3 gap-6 mb-6">
+            <div>
+              <label class="block text-sm text-slate-400 mb-2 font-medium">Monto de Inversi&oacute;n (USDT)</label>
+              <input type="number" id="roi-amount" value="1000" min="1" class="w-full bg-white/3 border border-white/8 text-white font-mono text-lg px-4 py-3 rounded-xl focus:border-amber-400/50 focus:outline-none transition">
+            </div>
+            <div>
+              <label class="block text-sm text-slate-400 mb-2 font-medium">Producto Nexum</label>
+              <select id="roi-product" class="w-full bg-white/3 border border-white/8 text-white text-sm px-4 py-3 rounded-xl focus:border-amber-400/50 focus:outline-none transition" style="background-color:#0F1629;">
+                <option value="0">&#9889; FLASH ($1)</option>
+                <option value="1" selected>&#127919; ORIGINAL ($1)</option>
+                <option value="2">&#128142; PREMIUM ($20)</option>
+                <option value="3">&#128640; ELITE ($10)</option>
+                <option value="4">&#128081; VIP ($200)</option>
+                <option value="5">&#11088; BLACKBLOK ($200)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm text-slate-400 mb-2 font-medium">Per&iacute;odo (Rondas)</label>
+              <input type="number" id="roi-rounds" value="12" min="1" max="100" class="w-full bg-white/3 border border-white/8 text-white font-mono text-lg px-4 py-3 rounded-xl focus:border-amber-400/50 focus:outline-none transition">
+            </div>
+          </div>
+          <button onclick="calcROI()" class="btn-primary px-6 py-3 rounded-xl text-sm font-semibold mb-6">Calcular Retorno &rarr;</button>
+          <div id="roi-results" class="hidden">
+            <div class="border-t border-white/8 pt-6">
+              <div class="grid md:grid-cols-3 gap-4">
+                <div class="bg-white/3 rounded-xl p-4 border border-white/5 text-center"><p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Retorno Estimado</p><p class="text-2xl font-bold text-emerald-400 font-display" id="roi-return">$0.00</p></div>
+                <div class="bg-white/3 rounded-xl p-4 border border-white/5 text-center"><p class="text-xs text-slate-500 uppercase tracking-wide mb-1">ROI Total</p><p class="text-2xl font-bold text-amber-400 font-display" id="roi-percentage">0%</p></div>
+                <div class="bg-white/3 rounded-xl p-4 border border-white/5 text-center"><p class="text-xs text-slate-500 uppercase tracking-wide mb-1">Capital + Ganancias</p><p class="text-2xl font-bold text-white font-display" id="roi-total">$0.00</p></div>
+              </div>
+              <p class="text-xs text-slate-600 mt-4 text-center">Simulaci&oacute;n basada en el modelo de distribuci&oacute;n del protocolo. Retornos reales pueden variar.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Liquidity Pools -->
+        <div class="mb-6">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center">
+              <svg width="20" height="20" fill="none" stroke="#3B82F6" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <div><h3 class="font-display text-xl font-bold text-white">Pools de Liquidez Activas</h3><p class="text-xs text-slate-500">Aporta USDT &middot; Capital devuelto + ganancias al cierre</p></div>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8" id="investor-pools-grid"></div>
+        <div class="glass rounded-2xl p-5 text-center">
+          <p class="text-slate-500 text-sm">Para aportar liquidez, primero debes aprobar tus USDT. Todo el proceso es on-chain mediante el contrato NexumManager.</p>
+        </div>
+      </div>
+    </section>
+  </div>
