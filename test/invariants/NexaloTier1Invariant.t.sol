@@ -173,8 +173,6 @@ contract NexaloTier1Invariant is Test {
     // this provides a tighter check per-user.
     // ════════════════════════════════════════════════════════════
     function invariant_NoLockedFunds() public view {
-        uint256 contractBalance = usdt.balanceOf(address(manager));
-        
         // Check that the contract can pay out all pending claims
         // by verifying the solvency invariant holds
         // Note: We can't iterate all users in an invariant test,

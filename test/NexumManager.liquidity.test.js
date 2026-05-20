@@ -115,11 +115,11 @@ describe("NexumManager - round liquidity settlement", function () {
 
     await fundAndApprove(stable, signers.buyer, await manager.getAddress(), totalPaid);
 
-    const founderBalanceBefore = await stable.balanceOf(signers.founder.address);
+    const founderClaimBefore = await manager.claimableStable(signers.founder.address);
     await fillFlashRound(manager, signers.buyer);
-    const founderBalanceAfterBuy = await stable.balanceOf(signers.founder.address);
+    const founderClaimAfterBuy = await manager.claimableStable(signers.founder.address);
 
-    expect(founderBalanceAfterBuy - founderBalanceBefore).to.equal(expectedFounderImmediate);
+    expect(founderClaimAfterBuy - founderClaimBefore).to.equal(expectedFounderImmediate);
 
     const roundAfterBuy = await manager.rounds(productId, roundId);
     const requestId = roundAfterBuy.vrfRequestId;
@@ -170,8 +170,10 @@ describe("NexumManager - round liquidity settlement", function () {
       liquidityAmount + expectedInvestorProfit
     );
 
+    // El founder tiene 7% de compras acumulado vía pull-pattern, pero 0 del settlement (inversores cubrieron)
     const founderClaimable = await manager.claimableStable(signers.founder.address);
-    expect(founderClaimable).to.equal(0n);
+    const expectedFounderFromBuys = (totalPaid * 700n) / 10000n;
+    expect(founderClaimable).to.equal(expectedFounderFromBuys);
   });
 
 it("recorta el overfunding al liquidityTarget exacto", async function () {
@@ -275,8 +277,10 @@ it("acumula principal cuando el mismo inversor aporta dos veces", async function
     expect(inv1After - inv1Before).to.equal(inv1Liquidity + expectedInv1Profit);
     expect(inv2After - inv2Before).to.equal(inv2Liquidity + expectedInv2Profit);
 
+    // El founder tiene 7% de compras acumulado vía pull-pattern, pero 0 del settlement
     const founderClaimable = await manager.claimableStable(signers.founder.address);
-    expect(founderClaimable).to.equal(0n);
+    const expectedFounderFromBuys = (totalPaid * 700n) / 10000n;
+    expect(founderClaimable).to.equal(expectedFounderFromBuys);
   });
 
   it("liquida correctamente con liquidez parcial y no envia el profit al founder", async function () {

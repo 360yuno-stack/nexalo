@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -50,9 +50,6 @@ contract NXLToken is ERC20 {
     // ======= Snapshot-lite storage =======
     uint256 public lastSnapshotId;
     mapping(uint256 => uint256) public snapshotBlock; // snapshotId -> blockNumber
-
-    // uint48 para block.number (uint32 se desborda en ~136 años a 1 bloque/3s)
-    mapping(uint256 => uint256) private _snapshotBlockExtended; // snapshotId -> blockNumber (uint256)
 
     Checkpoints.Trace208 private _totalSupplyCheckpoints;
     mapping(address => Checkpoints.Trace208) private _balanceCheckpoints;
@@ -195,12 +192,14 @@ contract NXLToken is ERC20 {
     function balanceOfAt(address account, uint256 snapshotId) external view returns (uint256) {
         uint256 blk = snapshotBlock[snapshotId];
         require(blk != 0, "Snapshot not found");
+        // forge-lint: disable-next-line(unsafe-typecast)
         return _balanceCheckpoints[account].upperLookup(uint48(blk));
     }
 
     function totalSupplyAt(uint256 snapshotId) external view returns (uint256) {
         uint256 blk = snapshotBlock[snapshotId];
         require(blk != 0, "Snapshot not found");
+        // forge-lint: disable-next-line(unsafe-typecast)
         return _totalSupplyCheckpoints.upperLookup(uint48(blk));
     }
 
@@ -220,11 +219,13 @@ contract NXLToken is ERC20 {
     function _writeBalanceCheckpoint(address account) private {
         uint256 bal = balanceOf(account);
         // uint208 safe: max balance = 100M * 1e18 = 1e26 < 2^208 (~4e62)
+        // forge-lint: disable-next-line(unsafe-typecast)
         _balanceCheckpoints[account].push(uint48(block.number), uint208(bal));
     }
 
     function _writeTotalSupplyCheckpoint() private {
         uint256 ts = totalSupply();
+        // forge-lint: disable-next-line(unsafe-typecast)
         _totalSupplyCheckpoints.push(uint48(block.number), uint208(ts));
     }
 }

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -61,17 +61,6 @@ contract NexaloStaking is ReentrancyGuard, Ownable {
     function _updateDebt(address user) private {
         UserInfo storage u = users[user];
         u.rewardDebt = (u.amount * accRewardPerShareE18) / ACC;
-    }
-
-    function _distribute(uint256 amount) private {
-        // amount ya está en el contrato (WBTC)
-        if (amount == 0) return;
-        if (totalStaked == 0) {
-            fundedButUndistributed += amount;
-            emit DistributedBufferedRewards(0);
-            return;
-        }
-        accRewardPerShareE18 += (amount * ACC) / totalStaked;
     }
 
     function _distributeBufferedIfPossible() private {

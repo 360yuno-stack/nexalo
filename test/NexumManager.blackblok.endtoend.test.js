@@ -148,20 +148,20 @@ describe("NexumManager - BLACKBLOK distribución real", function () {
     const totalPaid = ethers.parseEther("2000000");
     await fundAndApprove(stable, signers.buyer, await manager.getAddress(), totalPaid);
 
-    const founderBefore = await stable.balanceOf(signers.founder.address);
-    const feesBefore = await stable.balanceOf(signers.feesReceiver.address);
-    const opsBefore = await stable.balanceOf(signers.operationsService.address);
-    const partnerBefore = await stable.balanceOf(signers.partner.address);
+    const founderBefore = await manager.claimableStable(signers.founder.address);
+    const feesBefore = await manager.claimableStable(signers.feesReceiver.address);
+    const opsBefore = await manager.claimableStable(signers.operationsService.address);
+    const partnerBefore = await manager.claimableStable(signers.partner.address);
     const treasuryBefore = await stable.balanceOf(await treasury.getAddress());
     const auditBefore = await manager.auditAccrued();
     const nxlBefore = await nxl.availableRewards();
 
     await fillBlackblokRoundSpecific(manager, signers.buyer);
 
-    const founderAfter = await stable.balanceOf(signers.founder.address);
-    const feesAfter = await stable.balanceOf(signers.feesReceiver.address);
-    const opsAfter = await stable.balanceOf(signers.operationsService.address);
-    const partnerAfter = await stable.balanceOf(signers.partner.address);
+    const founderAfter = await manager.claimableStable(signers.founder.address);
+    const feesAfter = await manager.claimableStable(signers.feesReceiver.address);
+    const opsAfter = await manager.claimableStable(signers.operationsService.address);
+    const partnerAfter = await manager.claimableStable(signers.partner.address);
     const treasuryAfter = await stable.balanceOf(await treasury.getAddress());
     const auditAfter = await manager.auditAccrued();
     const nxlAfter = await nxl.availableRewards();

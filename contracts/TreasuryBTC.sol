@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -261,6 +261,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
     }
 
     function openRedeemWindow() external nonReentrant onlyOwner {
+        // forge-lint: disable-next-line(block-timestamp)
         require(block.timestamp >= redeemWindowStart, "Not started");
         require(!windowOpen, "Already open");
 
@@ -295,6 +296,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
 
     function redeem(uint256 nxlAmount) external nonReentrant {
         require(windowOpen, "Window closed");
+        // forge-lint: disable-next-line(block-timestamp)
         require(block.timestamp <= windowCloseTime, "Window expired");
         require(nxlAmount > 0, "Amount=0");
 
@@ -324,6 +326,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
 
     function closeRedeemWindow() external nonReentrant onlyOwner {
         require(windowOpen, "Not open");
+        // forge-lint: disable-next-line(block-timestamp)
         require(block.timestamp > windowCloseTime, "Not expired");
         windowOpen = false;
         emit WindowClosed(nxlBurnedThisWindow);

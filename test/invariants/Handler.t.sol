@@ -37,6 +37,7 @@ contract NexaloHandler is Test {
         uint256[4] memory allowed = [uint256(1), uint256(3), uint256(5), uint256(10)];
         quantity = allowed[quantity % 4];
         
+        // forge-lint: disable-next-line(unsafe-typecast)
         address user = address(uint160(userSeed % 1000 + 1));
         
         // Fund user
@@ -92,6 +93,7 @@ contract NexaloHandler is Test {
 
     // ── ACTION 4: Claim stable rewards (pull payment test) ──
     function claimStable(uint256 userSeed) public {
+        // forge-lint: disable-next-line(unsafe-typecast)
         address user = address(uint160(userSeed % 1000 + 1));
         
         vm.prank(user);
@@ -106,6 +108,7 @@ contract NexaloHandler is Test {
     function provideLiquidity(uint256 productId, uint256 amount, uint256 userSeed) public {
         productId = productId % 6;
         amount = bound(amount, 1, 10000 * 10**18);
+        // forge-lint: disable-next-line(unsafe-typecast)
         address user = address(uint160(userSeed % 1000 + 1));
 
         usdt.mint(user, amount);

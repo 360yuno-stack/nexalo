@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -527,8 +527,8 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
             ticketOwner[productId][roundId][t] = msg.sender;
             userTickets[productId][roundId][msg.sender].push(t);
             assigned[i] = t;
-            round.ticketsSold += 1;
         }
+        round.ticketsSold += quantity; // GAS OPT: una sola escritura a storage en vez de N
 
         emit TicketsPurchased(productId, roundId, msg.sender, quantity, assigned, totalPriceStable);
 
@@ -692,7 +692,8 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         round.prizePot += prize;
         round.instantPot += instant;
 
-        stablecoin.safeTransfer(founder, (totalStable * PCT_FOUNDER) / 10000);
+        // GAS OPT: Acumular en vez de transferir (ahorra ~120K gas — pull pattern)
+        _accrueStable(founder, (totalStable * PCT_FOUNDER) / 10000);
 
         uint256 investorShare = (totalStable * PCT_INVESTOR) / 10000;
         round.liquidityProfitPool += investorShare;
@@ -720,13 +721,15 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
             round.prizePot += (totalStable * PCT_AMBASSADORS) / 10000;
         }
 
-        stablecoin.safeTransfer(feesReceiver, (totalStable * PCT_FEES) / 10000);
-        stablecoin.safeTransfer(operationsService, (totalStable * PCT_OPS_SERVICE) / 10000);
+        // GAS OPT: Acumular en vez de transferir
+        _accrueStable(feesReceiver, (totalStable * PCT_FEES) / 10000);
+        _accrueStable(operationsService, (totalStable * PCT_OPS_SERVICE) / 10000);
 
         uint256 auditAmount = (totalStable * PCT_AUDIT) / 10000;
         auditAccrued += auditAmount;
 
-        stablecoin.safeTransfer(partner, (totalStable * PCT_PARTNER) / 10000);
+        // GAS OPT: Acumular en vez de transferir
+        _accrueStable(partner, (totalStable * PCT_PARTNER) / 10000);
 
         uint256 referralBudget = (totalStable * PCT_REFERRALS) / 10000;
         uint256 toPay = 0;
@@ -880,6 +883,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
 
         uint256 t = roundVRFRequestTime[productId][roundId];
         require(t != 0, "No request time");
+        // forge-lint: disable-next-line(block-timestamp)
         require(block.timestamp > t + VRF_TIMEOUT, "Timeout not reached");
 
         NexumProduct memory product = products[productId];

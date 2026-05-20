@@ -16,19 +16,12 @@ function calcROI() {
   const product = CONFIG.PRODUCTS[productIdx];
   if (!product) { alert('Producto no encontrado'); return; }
 
-  // The instant-reward pool gets 10% of total pool revenue
-  // Investor share = (yourDeposit / totalPoolLiquidity) * instantRewardPool
-  // Simplified model: ~8-15% per round depending on fill rate
-  const poolRevenue = product.price * product.maxTickets; // total revenue when round fills
-  const instantRewardPct = 0.10; // 10% goes to instant rewards pool
-  const investorSharePct = 0.70; // ~70% of instant pool goes to liquidity providers
-  const fillRate = 0.85; // assume 85% average fill
+  // On-chain model: PCT_INVESTOR = 300 bps = 3% ROI per round on invested capital
+  // Investor earns 3% of their principal for each completed round
+  const roiPerRound = 0.03; // 3% per round (PCT_INVESTOR = 300 bps)
+  const profitPerRound = amount * roiPerRound;
 
-  const revenuePerRound = poolRevenue * fillRate * instantRewardPct * investorSharePct;
-  const roiPerRound = amount > 0 ? (revenuePerRound / Math.max(amount, revenuePerRound * 2)) : 0;
-  const cappedRoiPerRound = Math.min(roiPerRound, 0.15); // cap at 15% per round
-
-  const totalReturn = amount * cappedRoiPerRound * rounds;
+  const totalReturn = profitPerRound * rounds;
   const roiPct = (totalReturn / amount * 100).toFixed(1);
   const totalWithCapital = amount + totalReturn;
 
@@ -141,7 +134,7 @@ function renderInvestorPools() {
 
         <div class="flex gap-2">
           <input type="number" id="inv-input-${p.id}" placeholder="USDT" min="1"
-            class="flex-1 bg-white/5 border border-white/10 text-white text-sm px-3 py-2 rounded-lg focus:outline-none focus:border-blue-400/50 transition font-mono">
+            class="flex-1 bg-white/10 border border-white/20 text-white text-sm px-3 py-2 rounded-lg focus:outline-none focus:bg-white/15 focus:border-blue-400/50 transition font-mono font-bold placeholder-slate-400">
           <button onclick="provideLiquidity(${p.id})"
             class="px-4 py-2 rounded-lg text-sm font-bold transition hover:scale-105"
             style="background:${c.accent}; color:#000;">

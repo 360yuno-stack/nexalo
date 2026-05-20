@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -27,7 +27,6 @@ contract BuybackContract is Ownable, ReentrancyGuard {
         require(_nxlToken != address(0), "Invalid NXL");
         stablecoin = IERC20(_stablecoin);
         nxlToken = IERC20(_nxlToken);
-        nxlToken; // silence unused warning if any
     }
 
     function receiveFunds() external nonReentrant {

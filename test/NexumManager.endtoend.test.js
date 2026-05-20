@@ -155,20 +155,20 @@ describe("NexumManager - end to end ecosistema FLASH", function () {
     const totalPaid = ethers.parseEther("1000");
     await fundAndApprove(stable, signers.buyer, await manager.getAddress(), totalPaid);
 
-    const founderStableBefore = await stable.balanceOf(signers.founder.address);
-    const feesStableBefore = await stable.balanceOf(signers.feesReceiver.address);
-    const opsStableBefore = await stable.balanceOf(signers.operationsService.address);
-    const partnerStableBefore = await stable.balanceOf(signers.partner.address);
+    const founderStableBefore = await manager.claimableStable(signers.founder.address);
+    const feesStableBefore = await manager.claimableStable(signers.feesReceiver.address);
+    const opsStableBefore = await manager.claimableStable(signers.operationsService.address);
+    const partnerStableBefore = await manager.claimableStable(signers.partner.address);
     const treasuryStableBefore = await stable.balanceOf(await treasury.getAddress());
     const auditAccruedBefore = await manager.auditAccrued();
     const nxlBefore = await nxl.availableRewards();
 
     await fillFlashRoundSpecific(manager, signers.buyer);
 
-    const founderStableAfterBuy = await stable.balanceOf(signers.founder.address);
-    const feesStableAfter = await stable.balanceOf(signers.feesReceiver.address);
-    const opsStableAfter = await stable.balanceOf(signers.operationsService.address);
-    const partnerStableAfter = await stable.balanceOf(signers.partner.address);
+    const founderStableAfterBuy = await manager.claimableStable(signers.founder.address);
+    const feesStableAfter = await manager.claimableStable(signers.feesReceiver.address);
+    const opsStableAfter = await manager.claimableStable(signers.operationsService.address);
+    const partnerStableAfter = await manager.claimableStable(signers.partner.address);
     const treasuryStableAfter = await stable.balanceOf(await treasury.getAddress());
     const auditAccruedAfter = await manager.auditAccrued();
     const nxlAfterBuys = await nxl.availableRewards();

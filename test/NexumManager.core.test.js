@@ -130,15 +130,15 @@ describe("NexumManager — Core", () => {
         it("founder=7%, fees=2%, ops=1% on FLASH ticket", async () => {
             const { manager, usdt, founder, fees, ops, alice } = await loadFixture(deployFixture);
             const [fb, fb2, fb3] = [
-                await usdt.balanceOf(founder.address),
-                await usdt.balanceOf(fees.address),
-                await usdt.balanceOf(ops.address),
+                await manager.claimableStable(founder.address),
+                await manager.claimableStable(fees.address),
+                await manager.claimableStable(ops.address),
             ];
             await manager.connect(alice).buyTickets(0, 1, ZERO, GAS);
             const paid = toU(1);
-            expect((await usdt.balanceOf(founder.address)) - fb).to.equal((paid * 700n) / 10000n);
-            expect((await usdt.balanceOf(fees.address)) - fb2).to.equal((paid * 200n) / 10000n);
-            expect((await usdt.balanceOf(ops.address)) - fb3).to.equal((paid * 100n) / 10000n);
+            expect((await manager.claimableStable(founder.address)) - fb).to.equal((paid * 700n) / 10000n);
+            expect((await manager.claimableStable(fees.address)) - fb2).to.equal((paid * 200n) / 10000n);
+            expect((await manager.claimableStable(ops.address)) - fb3).to.equal((paid * 100n) / 10000n);
         });
 
         it("prizePot >= 50%", async () => {

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -82,6 +82,7 @@ contract DonationVault is Ownable, ReentrancyGuard {
 
     function executeTreasuryUpdate() external onlyOwner {
         require(pendingTreasury != address(0), "No pending update");
+        // forge-lint: disable-next-line(block-timestamp)
         require(block.timestamp >= pendingTreasuryAvailableAt, "Timelock not elapsed");
         address newTreasury = pendingTreasury;
         pendingTreasury = address(0);
