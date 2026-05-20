@@ -166,7 +166,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
     );
 
     event RoundCompleted(uint256 indexed productId, uint256 indexed roundId, address indexed winner, uint256 prize, uint256 winningTicket);
-    event NewRoundStarted(uint256 indexed productId, uint256 indexed roundId, uint256 timestamp);
+    event NewRoundStarted(uint256 indexed productId, uint256 indexed roundId);
     event VRFRequested(uint256 indexed requestId, uint256 indexed productId, uint256 indexed roundId);
 
     event ProductReactivated(uint256 indexed productId);
@@ -1217,7 +1217,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         // H-01 FIX: Only check NXL at round start — never block mid-round purchases
         _checkNXLForNewRound(productId);
 
-        emit NewRoundStarted(productId, newRoundId, block.timestamp);
+        emit NewRoundStarted(productId, newRoundId);
     }
 
     /// @notice HIGH-03 FIX: reactivateProduct callable by guardian OR owner.

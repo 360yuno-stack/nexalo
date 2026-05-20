@@ -59,7 +59,7 @@ contract NXLToken is ERC20 {
     event VestedTokensWithdrawn(address indexed beneficiary, uint256 amount);
     event TreasuryBTCSet(address indexed treasury);
     event TokensBurned(uint256 amount);
-    event SnapshotCreated(uint256 snapshotId, uint256 blockNumber);
+    event SnapshotCreated(uint256 snapshotId);
 
     modifier onlyNexumManager() {
         require(msg.sender == nexumManager, "Only NexumManager");
@@ -186,7 +186,7 @@ contract NXLToken is ERC20 {
         lastSnapshotId += 1;
         snapshotBlock[lastSnapshotId] = block.number;
 
-        emit SnapshotCreated(lastSnapshotId, block.number);
+        emit SnapshotCreated(lastSnapshotId);
         return lastSnapshotId;
     }
 
