@@ -96,7 +96,7 @@ contract NXLToken is ERC20 {
         require(msg.sender == founderAddress, "Only founder");
         require(nexumManager == address(0), "Manager already set");
         require(_nexumManager != address(0), "Invalid nexumManager");
-        require(_nexumManager.code.length > 0, "NexumManager must be contract");
+        require(_nexumManager.code.length != 0, "NexumManager must be contract");
         nexumManager = _nexumManager;
     }
 
@@ -112,7 +112,7 @@ contract NXLToken is ERC20 {
 
     function distributeReward(address recipient, uint256 amount) external onlyNexumManager {
         require(recipient != address(0), "Invalid recipient");
-        require(amount > 0, "Amount=0");
+        require(amount != 0, "Amount=0");
 
         uint256 available = getAvailableRewards();
         require(available >= amount, "Insufficient rewards");
@@ -128,7 +128,7 @@ contract NXLToken is ERC20 {
         uint256 founderReserved = FOUNDER_AMOUNT - founderWithdrawn;
         uint256 partnerReserved = PARTNER_AMOUNT - partnerWithdrawn;
         uint256 reserved = founderReserved + partnerReserved;
-        if (bal > reserved) return bal - reserved;
+        if (bal >= reserved + 1) return bal - reserved;
         return 0;
     }
 
@@ -151,7 +151,7 @@ contract NXLToken is ERC20 {
     function founderWithdraw() external {
         require(msg.sender == founderAddress, "Only founder");
         uint256 available = getFounderAvailable();
-        require(available > 0, "No tokens");
+        require(available != 0, "No tokens");
         founderWithdrawn += available;
         _transfer(address(this), founderAddress, available);
         emit VestedTokensWithdrawn(founderAddress, available);
@@ -160,14 +160,14 @@ contract NXLToken is ERC20 {
     function partnerWithdraw() external {
         require(msg.sender == partnerAddress, "Only partner");
         uint256 available = getPartnerAvailable();
-        require(available > 0, "No tokens");
+        require(available != 0, "No tokens");
         partnerWithdrawn += available;
         _transfer(address(this), partnerAddress, available);
         emit VestedTokensWithdrawn(partnerAddress, available);
     }
 
     function burnUndistributed(uint256 amount) external onlyNexumManager {
-        require(amount > 0, "Amount=0");
+        require(amount != 0, "Amount=0");
         uint256 available = getAvailableRewards();
         require(available >= amount, "Insufficient rewards");
         _burn(address(this), amount);
@@ -175,7 +175,7 @@ contract NXLToken is ERC20 {
     }
 
     function burn(uint256 amount) external {
-        require(amount > 0, "Amount=0");
+        require(amount != 0, "Amount=0");
         _burn(msg.sender, amount);
         emit TokensBurned(amount);
     }

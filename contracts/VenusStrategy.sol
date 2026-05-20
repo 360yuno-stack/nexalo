@@ -44,13 +44,13 @@ contract VenusStrategy is IYieldStrategy, ReentrancyGuard {
     function treasury() external view override returns (address) { return _treasury; }
 
     function deposit(uint256 amount) external override onlyTreasury nonReentrant notProduction {
-        require(amount > 0, "Amount=0");
+        require(amount != 0, "Amount=0");
         _stable.safeTransferFrom(_treasury, address(this), amount);
         _managed += amount;
     }
 
     function withdraw(uint256 amount) external override onlyTreasury nonReentrant notProduction {
-        require(amount > 0, "Amount=0");
+        require(amount != 0, "Amount=0");
         require(_managed >= amount, "Insufficient managed");
         _managed -= amount;
         _stable.safeTransfer(_treasury, amount);
@@ -60,7 +60,7 @@ contract VenusStrategy is IYieldStrategy, ReentrancyGuard {
         uint256 bal = _stable.balanceOf(address(this));
         withdrawn = bal;
         _managed = 0;
-        if (bal > 0) _stable.safeTransfer(_treasury, bal);
+        if (bal != 0) _stable.safeTransfer(_treasury, bal);
     }
 
     function harvest() external override onlyTreasury nonReentrant notProduction returns (uint256 gained) {

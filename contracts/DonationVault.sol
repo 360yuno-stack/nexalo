@@ -42,7 +42,7 @@ contract DonationVault is Ownable2Step, ReentrancyGuard {
     }
 
     function donate(uint256 amount, string calldata message) external nonReentrant {
-        require(amount > 0, "Amount>0");
+        require(amount != 0, "Amount>0");
         require(bytes(message).length <= 280, "Message too long");
 
         stablecoin.safeTransferFrom(msg.sender, address(this), amount);

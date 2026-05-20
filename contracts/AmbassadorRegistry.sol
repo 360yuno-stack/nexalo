@@ -74,7 +74,7 @@ contract AmbassadorRegistry is Ownable2Step, ReentrancyGuard {
     /// @notice El candidato aprobado se registra como embajador activo.
     function selfRegister(string calldata name) external {
         require(approvedForRegistration[msg.sender], "Not approved");
-        require(bytes(name).length > 0 && bytes(name).length <= 64, "Invalid name");
+        require(bytes(name).length != 0 && bytes(name).length <= 64, "Invalid name");
         Ambassador storage a = ambassadors[msg.sender];
         require(bytes(a.name).length == 0, "Already registered");
 
@@ -94,12 +94,12 @@ contract AmbassadorRegistry is Ownable2Step, ReentrancyGuard {
     function setAmbassadorStatus(address ambassador, bool active) external nonReentrant onlyOwner {
         require(ambassador != address(0), "Invalid address");
         Ambassador storage a = ambassadors[ambassador];
-        require(bytes(a.name).length > 0, "Not registered");
+        require(bytes(a.name).length != 0, "Not registered");
         if (a.active == active) return;
 
         // CRISTALIZA lo pendiente antes de cambiar status (para que no se pierda)
         uint256 pendingNow = _pendingOnly(a);
-        if (pendingNow > 0) {
+        if (pendingNow != 0) {
             a.storedRewards += pendingNow;
         }
 
@@ -114,8 +114,8 @@ contract AmbassadorRegistry is Ownable2Step, ReentrancyGuard {
 
     function distributeFunds() external nonReentrant {
         uint256 bal = stablecoin.balanceOf(address(this));
-        require(bal > lastBalance, "No new funds");
-        require(activeCount > 0, "No active ambassadors");
+        require(bal >= lastBalance + 1, "No new funds");
+        require(activeCount != 0, "No active ambassadors");
 
         uint256 delta = bal - lastBalance;
         accRewardPerActiveE18 += (delta * 1e18) / activeCount;
@@ -141,11 +141,11 @@ contract AmbassadorRegistry is Ownable2Step, ReentrancyGuard {
 
     function claim() external nonReentrant {
         Ambassador storage a = ambassadors[msg.sender];
-        require(bytes(a.name).length > 0, "Not registered");
+        require(bytes(a.name).length != 0, "Not registered");
 
         uint256 pendingNow = _pendingOnly(a);
         uint256 amt = a.storedRewards + pendingNow;
-        require(amt > 0, "Nothing to claim");
+        require(amt != 0, "Nothing to claim");
 
         // actualiza estado antes de transfer (pull)
         a.storedRewards = 0;

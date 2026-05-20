@@ -70,7 +70,7 @@ contract ReferralNetwork is Ownable2Step, ReentrancyGuard {
 
     function distributeCommissions(address buyer, uint256 referralBudget) external nonReentrant onlyNexumManager {
         require(buyer != address(0), "Invalid buyer");
-        require(referralBudget > 0, "Budget=0");
+        require(referralBudget != 0, "Budget=0");
 
         // M-03 FIX: Verify balance BEFORE accruing to any referrer (CEI pattern)
         require(stablecoin.balanceOf(address(this)) >= referralBudget, "Insufficient referral funds");
@@ -80,16 +80,16 @@ contract ReferralNetwork is Ownable2Step, ReentrancyGuard {
         address l3 = l2 == address(0) ? address(0) : referrerOf[l2];
 
         uint256 paidTotal = 0;
-        if (l1 != address(0)) { uint256 a1 = (referralBudget * 500) / 1000; claimable[l1] += a1; paidTotal += a1; }
-        if (l2 != address(0)) { uint256 a2 = (referralBudget * 300) / 1000; claimable[l2] += a2; paidTotal += a2; }
-        if (l3 != address(0)) { uint256 a3 = (referralBudget * 200) / 1000; claimable[l3] += a3; paidTotal += a3; }
+        if (l1 != address(0)) { uint256 a1 = (referralBudget * 500) / 1_000; claimable[l1] += a1; paidTotal += a1; }
+        if (l2 != address(0)) { uint256 a2 = (referralBudget * 300) / 1_000; claimable[l2] += a2; paidTotal += a2; }
+        if (l3 != address(0)) { uint256 a3 = (referralBudget * 200) / 1_000; claimable[l3] += a3; paidTotal += a3; }
 
         emit CommissionsAccrued(buyer, referralBudget, l1, l2, l3, paidTotal);
     }
 
     function claim() external nonReentrant {
         uint256 amt = claimable[msg.sender];
-        require(amt > 0, "Nothing to claim");
+        require(amt != 0, "Nothing to claim");
         claimable[msg.sender] = 0;
         stablecoin.safeTransfer(msg.sender, amt);
         emit Claimed(msg.sender, amt);

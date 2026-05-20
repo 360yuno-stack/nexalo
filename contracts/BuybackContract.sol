@@ -33,7 +33,7 @@ contract BuybackContract is Ownable2Step, ReentrancyGuard {
     function receiveFunds() external nonReentrant {
         uint256 bal = stablecoin.balanceOf(address(this));
         uint256 accounted = totalReceived - totalSpent; // totalSpent nunca debería superar totalReceived
-        require(bal > accounted, "No new funds");
+        require(bal >= accounted + 1, "No new funds");
 
         uint256 delta = bal - accounted;
         totalReceived += delta;
@@ -43,7 +43,7 @@ contract BuybackContract is Ownable2Step, ReentrancyGuard {
 
     function spend(address to, uint256 amount) external nonReentrant onlyOwner {
         require(to != address(0), "Invalid to");
-        require(amount > 0, "Amount must be > 0");
+        require(amount != 0, "Amount must be > 0");
         require(stablecoin.balanceOf(address(this)) >= amount, "Insufficient balance");
 
         totalSpent += amount;

@@ -133,9 +133,9 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
     mapping(uint256 => mapping(uint256 => mapping(address => uint256))) public roundInvestorReturned;
 
     uint256 public constant PCT_PRIZE_POOL   = 5000;
-    uint256 public constant PCT_TREASURY_BTC = 1000;
-    uint256 public constant PCT_INSTANT      = 1000;
-    uint256 public constant PCT_REFERRALS    = 1000;
+    uint256 public constant PCT_TREASURY_BTC = 1_000;
+    uint256 public constant PCT_INSTANT      = 1_000;
+    uint256 public constant PCT_REFERRALS    = 1_000;
     uint256 public constant PCT_FOUNDER      = 700;
     uint256 public constant PCT_AMBASSADORS  = 500;
     uint256 public constant PCT_INVESTOR     = 300;
@@ -306,19 +306,19 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
     }
 
     function _initializeProducts() private {
-        products[0] = NexumProduct("FLASH",      1e18,        1000,  0.1e18,  0.1e18,        500e18,      true);
-        products[1] = NexumProduct("ORIGINAL",   1e18,       10000, 0.25e18, 0.25e18,       5000e18,      true);
-        products[2] = NexumProduct("PREMIUM",   20e18,        1000,  0.5e18,  0.5e18,      10000e18,      true);
-        products[3] = NexumProduct("ELITE",     10e18,       10000, 0.55e18, 0.55e18,      50000e18,      true);
-        products[4] = NexumProduct("VIP",      200e18,        1000, 0.85e18, 0.85e18,     100000e18,      true);
-        products[5] = NexumProduct("BLACKBLOK", 200e18,      10000,   1e18,     1e18,     1000000e18,     true);
+        products[0] = NexumProduct("FLASH",      1e18,        1_000,  0.1e18,  0.1e18,        500e18,      true);
+        products[1] = NexumProduct("ORIGINAL",   1e18,       10_000, 0.25e18, 0.25e18,      5_000e18,      true);
+        products[2] = NexumProduct("PREMIUM",   20e18,        1_000,  0.5e18,  0.5e18,     10_000e18,      true);
+        products[3] = NexumProduct("ELITE",     10e18,       10_000, 0.55e18, 0.55e18,     50_000e18,      true);
+        products[4] = NexumProduct("VIP",      200e18,        1_000, 0.85e18, 0.85e18,    100_000e18,      true);
+        products[5] = NexumProduct("BLACKBLOK", 200e18,      10_000,   1e18,     1e18,  1_000_000e18,     true);
     }
 
     function _instantExpectedForProduct(uint256 productId) internal view returns (uint256) {
         NexumProduct memory product = products[productId];
         uint256 tickets = product.maxTickets;
-        if (tickets == 0 || tickets % 1000 != 0) return 0;
-        uint256 factor = tickets / 1000;
+        if (tickets == 0 || tickets % 1_000 != 0) return 0;
+        uint256 factor = tickets / 1_000;
         return _usdToStable(product.priceUSDE18 * (100 * factor));
     }
 
@@ -376,12 +376,12 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         require(round.roundId == roundId && round.productId == productId, "Round not found");
         require(!round.completed, "Round completed");
         require(!round.vrfRequested, "Round closing");
-        require(amount > 0, "Amount zero");
-        require(round.liquidityFunded < round.liquidityTarget, "Liquidity full");
+        require(amount != 0, "Amount zero");
+        require(round.liquidityFunded <= round.liquidityTarget - 1, "Liquidity full");
 
         uint256 remaining = round.liquidityTarget - round.liquidityFunded;
-        uint256 accepted = amount > remaining ? remaining : amount;
-        require(accepted > 0, "Nothing accepted");
+        uint256 accepted = amount >= remaining + 1 ? remaining : amount;
+        require(accepted != 0, "Nothing accepted");
 
         stablecoin.safeTransferFrom(msg.sender, address(this), accepted);
 
@@ -420,7 +420,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         liquidityReturnedPrincipal = round.liquidityReturnedPrincipal;
         liquiditySettled = round.liquiditySettled;
         investorsCount = roundInvestorList[productId][roundId].length;
-        progressBps = liquidityTarget == 0 ? 0 : (liquidityFunded * 10000) / liquidityTarget;
+        progressBps = liquidityTarget == 0 ? 0 : (liquidityFunded * 10_000) / liquidityTarget;
     }
 
     function getInvestorPosition(uint256 productId, uint256 roundId, address user)
@@ -439,7 +439,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         principal = roundInvestorPrincipal[productId][roundId][user];
         settled = round.liquiditySettled;
         alreadyAccrued = roundInvestorReturned[productId][roundId][user];
-        fundedProgressBps = round.liquidityTarget == 0 ? 0 : (round.liquidityFunded * 10000) / round.liquidityTarget;
+        fundedProgressBps = round.liquidityTarget == 0 ? 0 : (round.liquidityFunded * 10_000) / round.liquidityTarget;
 
         if (principal == 0 || round.liquidityFunded == 0) {
             return (principal, 0, principal, fundedProgressBps, settled, alreadyAccrued);
@@ -461,7 +461,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         require(!round.completed, "Round completed");
 
         uint256 qty = ticketNumbers.length;
-        require(qty > 0, "Must select >=1");
+        require(qty != 0, "Must select >=1");
         require(qty == 1 || qty == 3 || qty == 5 || qty == 10, "Invalid qty");
         require(round.ticketsSold + qty <= product.maxTickets, "Not enough tickets");
 
@@ -469,7 +469,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         // handles exhaustion gracefully (deactivates product, never blocks ticket sale).
 
         for (uint256 i = 0; i < qty; i++) {
-            require(ticketNumbers[i] < product.maxTickets, "Invalid ticket");
+            require(ticketNumbers[i] <= product.maxTickets - 1, "Invalid ticket");
             require(ticketOwner[productId][roundId][ticketNumbers[i]] == address(0), "Ticket sold");
             for (uint256 j = i + 1; j < qty; j++) {
                 require(ticketNumbers[i] != ticketNumbers[j], "Duplicate ticket");
@@ -477,7 +477,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         }
 
         uint256 totalPriceStable = _usdToStable(product.priceUSDE18 * qty);
-        require(totalPriceStable > 0, "Price too small");
+        require(totalPriceStable != 0, "Price too small");
 
         stablecoin.safeTransferFrom(msg.sender, address(this), totalPriceStable);
 
@@ -522,7 +522,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         // H-01 FIX: NXL check removed from purchase gate — handled gracefully post-purchase.
 
         uint256 totalPriceStable = _usdToStable(product.priceUSDE18 * quantity);
-        require(totalPriceStable > 0, "Price too small");
+        require(totalPriceStable != 0, "Price too small");
 
         stablecoin.safeTransferFrom(msg.sender, address(this), totalPriceStable);
 
@@ -578,7 +578,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         if (remaining == 0 && rounds[productId][roundId].ticketsSold == 0) {
             remaining = maxTickets;
         }
-        require(remaining > 0, "No tickets left");
+        require(remaining != 0, "No tickets left");
 
         uint256 idx = _randomIndex(productId, roundId, remaining, salt);
         uint256 ticketId = _virtualGet(productId, roundId, idx);
@@ -654,7 +654,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
     function _checkNXLForNewRound(uint256 productId) private {
         NexumProduct memory p = products[productId];
         uint256 minNeeded = p.nxlPerTicket + p.nxlWinnerBonus;
-        if (nxlToken.getAvailableRewards() < minNeeded) {
+        if (nxlToken.getAvailableRewards() <= minNeeded - 1) {
             _deactivateProduct(productId);
         }
     }
@@ -669,7 +669,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         }
 
         uint256 available = nxlToken.getAvailableRewards();
-        if (available > 0) {
+        if (available != 0) {
             try nxlToken.burnUndistributed(available) {
             } catch (bytes memory reason) {
                 emit SettlementFailed(0, 0, reason); // FIX: log catch reason instead of silencing
@@ -693,20 +693,20 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
     function _splitFundsPerPurchase(uint256 productId, uint256 roundId, address buyer, uint256 totalStable) private {
         Round storage round = rounds[productId][roundId];
 
-        uint256 prize = (totalStable * PCT_PRIZE_POOL) / 10000;
-        uint256 instant = (totalStable * PCT_INSTANT) / 10000;
+        uint256 prize = (totalStable * PCT_PRIZE_POOL) / 10_000;
+        uint256 instant = (totalStable * PCT_INSTANT) / 10_000;
 
         round.prizePot += prize;
         round.instantPot += instant;
 
         // GAS OPT: Acumular en vez de transferir (ahorra ~120K gas — pull pattern)
-        _accrueStable(founder, (totalStable * PCT_FOUNDER) / 10000);
+        _accrueStable(founder, (totalStable * PCT_FOUNDER) / 10_000);
 
-        uint256 investorShare = (totalStable * PCT_INVESTOR) / 10000;
+        uint256 investorShare = (totalStable * PCT_INVESTOR) / 10_000;
         round.liquidityProfitPool += investorShare;
 
         if (treasuryBTC != address(0)) {
-            uint256 tAmt = (totalStable * PCT_TREASURY_BTC) / 10000;
+            uint256 tAmt = (totalStable * PCT_TREASURY_BTC) / 10_000;
             try this._safeTransferOut(treasuryBTC, tAmt) {
                 try ITreasuryBTCNotify(treasuryBTC).onFundsReceived(tAmt) {
                 } catch {
@@ -715,30 +715,30 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
                 round.prizePot += tAmt;
             }
         } else {
-            round.prizePot += (totalStable * PCT_TREASURY_BTC) / 10000;
+            round.prizePot += (totalStable * PCT_TREASURY_BTC) / 10_000;
         }
 
         if (ambassadorRegistry != address(0)) {
-            uint256 aAmt = (totalStable * PCT_AMBASSADORS) / 10000;
+            uint256 aAmt = (totalStable * PCT_AMBASSADORS) / 10_000;
             try this._safeTransferOut(ambassadorRegistry, aAmt) {
             } catch {
                 round.prizePot += aAmt;
             }
         } else {
-            round.prizePot += (totalStable * PCT_AMBASSADORS) / 10000;
+            round.prizePot += (totalStable * PCT_AMBASSADORS) / 10_000;
         }
 
         // GAS OPT: Acumular en vez de transferir
-        _accrueStable(feesReceiver, (totalStable * PCT_FEES) / 10000);
-        _accrueStable(operationsService, (totalStable * PCT_OPS_SERVICE) / 10000);
+        _accrueStable(feesReceiver, (totalStable * PCT_FEES) / 10_000);
+        _accrueStable(operationsService, (totalStable * PCT_OPS_SERVICE) / 10_000);
 
-        uint256 auditAmount = (totalStable * PCT_AUDIT) / 10000;
+        uint256 auditAmount = (totalStable * PCT_AUDIT) / 10_000;
         auditAccrued += auditAmount;
 
         // GAS OPT: Acumular en vez de transferir
-        _accrueStable(partner, (totalStable * PCT_PARTNER) / 10000);
+        _accrueStable(partner, (totalStable * PCT_PARTNER) / 10_000);
 
-        uint256 referralBudget = (totalStable * PCT_REFERRALS) / 10000;
+        uint256 referralBudget = (totalStable * PCT_REFERRALS) / 10_000;
         uint256 toPay = 0;
 
         if (referralNetwork != address(0)) {
@@ -747,11 +747,11 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
                 address l2,
                 address l3
             ) {
-                if (l1 != address(0)) toPay += (referralBudget * 500) / 1000;
-                if (l2 != address(0)) toPay += (referralBudget * 300) / 1000;
-                if (l3 != address(0)) toPay += (referralBudget * 200) / 1000;
+                if (l1 != address(0)) toPay += (referralBudget * 500) / 1_000;
+                if (l2 != address(0)) toPay += (referralBudget * 300) / 1_000;
+                if (l3 != address(0)) toPay += (referralBudget * 200) / 1_000;
 
-                if (toPay > 0) {
+                if (toPay != 0) {
                     try this._safeTransferOut(referralNetwork, toPay) {
                         try IReferralNetwork(referralNetwork).distributeCommissions(buyer, toPay) {
                         } catch {
@@ -769,7 +769,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         }
 
         uint256 leftover = referralBudget - toPay;
-        if (leftover > 0) round.prizePot += leftover;
+        if (leftover != 0) round.prizePot += leftover;
     }
 
     /// @dev Internal helper — llamado via try/catch desde _splitFundsPerPurchase.
@@ -833,7 +833,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         // If, due to an extreme bug, winner is still address(0), we emit
         // SettlementFailed so the pauseGuardian can intervene via manualSettle.
         if (winner == address(0)) {
-            emit SettlementFailed(productId, roundId, abi.encode("winner_slot_empty"));
+            emit SettlementFailed(productId, roundId, abi.encodePacked("winner_slot_empty"));
             return;
         }
 
@@ -891,7 +891,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         uint256 t = roundVRFRequestTime[productId][roundId];
         require(t != 0, "No request time");
         // forge-lint: disable-next-line(block-timestamp)
-        require(block.timestamp > t + VRF_TIMEOUT, "Timeout not reached");
+        require(block.timestamp >= t + VRF_TIMEOUT + 1, "Timeout not reached");
 
         NexumProduct memory product = products[productId];
         require(round.ticketsSold == product.maxTickets, "Round not full");
@@ -940,14 +940,14 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
 
         if (totalPrincipal == 0 || investors.length == 0) {
             round.liquiditySettled = true;
-            if (totalProfit > 0) _accrueStable(founder, totalProfit);
+            if (totalProfit != 0) _accrueStable(founder, totalProfit);
             emit RoundLiquiditySettled(productId, roundId, totalPrincipal, totalProfit);
             return;
         }
 
         uint256 startIdx = liquiditySettleIndex[productId][roundId];
         uint256 endIdx = startIdx + MAX_INVESTORS_PER_SETTLEMENT;
-        if (endIdx > investors.length) endIdx = investors.length;
+        if (endIdx >= investors.length + 1) endIdx = investors.length;
 
         // P-02 FIX: Load residuals from storage (O(1)) instead of re-iterating (O(N))
         uint256 remainingPrincipal;
@@ -970,10 +970,10 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
             bool isLast = (i == investors.length - 1);
 
             uint256 profit = isLast ? remainingProfit : (totalProfit * principal) / totalPrincipal;
-            if (profit > remainingProfit) profit = remainingProfit;
+            if (profit >= remainingProfit + 1) profit = remainingProfit;
 
             uint256 principalReturn = isLast ? remainingPrincipal : principal;
-            if (principalReturn > remainingPrincipal) principalReturn = remainingPrincipal;
+            if (principalReturn >= remainingPrincipal + 1) principalReturn = remainingPrincipal;
 
             uint256 totalReturn = principalReturn + profit;
             roundInvestorReturned[productId][roundId][inv] += totalReturn;
@@ -1023,7 +1023,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
 
         uint256 paidInstant = _accrueInstantRewardsBestEffort(productId, roundId, winningTicket, randomWord, winner);
 
-        if (round.instantPot > paidInstant) {
+        if (round.instantPot >= paidInstant + 1) {
             stablecoin.safeTransfer(feesReceiver, round.instantPot - paidInstant);
         }
 
@@ -1066,11 +1066,11 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         if (amount == 0) return;
 
         uint256 available = nxlToken.getAvailableRewards();
-        if (available < amount) {
+        if (available <= amount - 1) {
             _deactivateProduct(productId);
             // CRIT-01 FIX: Only accrue what is actually available, not the full amount
             uint256 toAccrue = available;
-            if (toAccrue > 0) {
+            if (toAccrue != 0) {
                 claimableNXL[recipient] += toAccrue;
                 emit NXLPartialAccrued(recipient, amount, toAccrue);
             }
@@ -1081,8 +1081,8 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         } catch {
             // Distribution failed — accrue only what's available right now
             uint256 nowAvailable = nxlToken.getAvailableRewards();
-            uint256 toAccrue = nowAvailable < amount ? nowAvailable : amount;
-            if (toAccrue > 0) {
+            uint256 toAccrue = nowAvailable <= amount - 1 ? nowAvailable : amount;
+            if (toAccrue != 0) {
                 claimableNXL[recipient] += toAccrue;
             }
             emit NXLAccrued(recipient, toAccrue);
@@ -1110,9 +1110,9 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
 
         uint256 tickets = product.maxTickets;
         if (tickets == 0) return 0;
-        if (tickets % 1000 != 0) return 0;
+        if (tickets % 1_000 != 0) return 0;
 
-        uint256 factor = tickets / 1000;
+        uint256 factor = tickets / 1_000;
 
         uint256 c1 = 41 * factor;
         uint256 c2 = 10 * factor;
@@ -1126,7 +1126,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         uint256 p4 = _usdToStable(product.priceUSDE18 * 4);
 
         uint256 expectedPaid = _usdToStable(product.priceUSDE18 * (100 * factor));
-        if (round.instantPot < expectedPaid) return 0;
+        if (round.instantPot <= expectedPaid - 1) return 0;
 
         uint256 step = (randomWord % (tickets - 1)) + 1;
         step = _makeCoprime(step, tickets);
@@ -1139,7 +1139,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
 
         for (uint256 i = 0; i < maxIters && winnersFound < totalWinners; i++) {
             // M-01 FIX: Gas safety net — leave enough gas for cleanup and storage writes
-            if (gasleft() < 50_000) break;
+            if (gasleft() <= 49_999) break;
             if (totalPaid >= expectedPaid) break;
 
             idx = (idx + step) % tickets;
@@ -1151,14 +1151,14 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
             if (w == winnerAddress) continue;
 
             uint256 pay;
-            if (winnersFound < c1) pay = p1;
-            else if (winnersFound < c1 + c2) pay = p2;
-            else if (winnersFound < c1 + c2 + c3) pay = p3;
+            if (winnersFound <= c1 - 1) pay = p1;
+            else if (winnersFound <= c1 + c2 - 1) pay = p2;
+            else if (winnersFound <= c1 + c2 + c3 - 1) pay = p3;
             else pay = p4;
 
             uint256 remaining = expectedPaid - totalPaid;
             if (remaining == 0) break;
-            if (pay > remaining) pay = remaining;
+            if (pay >= remaining + 1) pay = remaining;
             if (pay == 0) break;
 
             _accrueStable(w, pay);

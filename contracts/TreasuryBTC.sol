@@ -156,17 +156,17 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
 
     function receiveFunds() external nonReentrant {
         uint256 bal = stablecoin.balanceOf(address(this));
-        if (bal > accountedBalance) {
+        if (bal >= accountedBalance + 1) {
             uint256 delta = bal - accountedBalance;
             accountedBalance = bal;
             emit FundsReceived(delta);
-        } else if (bal < accountedBalance) {
+        } else if (bal <= accountedBalance - 1) {
             accountedBalance = bal;
         }
     }
 
     function onFundsReceived(uint256 amount) external onlyNexumManager nonReentrant {
-        require(amount > 0, "Amount=0");
+        require(amount != 0, "Amount=0");
         totalFromManager += amount;
         _syncBalance();
         emit FundsReceived(amount);
@@ -210,7 +210,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
 
     function depositToStrategy(uint256 amount) external nonReentrant onlyOwner {
         require(address(activeStrategy) != address(0), "No strategy");
-        require(amount > 0, "Amount=0");
+        require(amount != 0, "Amount=0");
         require(stablecoin.balanceOf(address(this)) >= amount, "Insufficient balance");
 
         stablecoin.forceApprove(address(activeStrategy), 0);
@@ -226,7 +226,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
 
     function withdrawFromStrategy(uint256 amount) external nonReentrant onlyOwner {
         require(address(activeStrategy) != address(0), "No strategy");
-        require(amount > 0, "Amount=0");
+        require(amount != 0, "Amount=0");
 
         activeStrategy.withdraw(amount);
 
@@ -247,7 +247,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
     function harvest() external nonReentrant onlyOwner returns (uint256 gained) {
         require(address(activeStrategy) != address(0), "No strategy");
         gained = activeStrategy.harvest();
-        if (gained > 0) {
+        if (gained != 0) {
             totalHarvested += gained;
             _syncBalance();
         }
@@ -257,7 +257,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
     function _circulatingSupply() internal view returns (uint256) {
         uint256 total = nxlToken.totalSupply();
         uint256 heldByToken = nxlToken.balanceOf(address(nxlToken));
-        if (total > heldByToken) return total - heldByToken;
+        if (total >= heldByToken + 1) return total - heldByToken;
         return 0;
     }
 
@@ -276,10 +276,10 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
 
         // FIX 8: Use totalAssets() (balance + strategy) instead of just balanceOf
         uint256 totalAssetsVal = this.totalAssets();
-        require(totalAssetsVal > 0, "No USDT liquidity");
+        require(totalAssetsVal != 0, "No USDT liquidity");
 
         uint256 circ = _circulatingSupply();
-        require(circ > 0, "No circulating supply");
+        require(circ != 0, "No circulating supply");
 
         // FIX 3: Snapshot balances at window open to prevent flash-loan manipulation
         windowSnapshotId = nxlToken.snapshot();
@@ -299,7 +299,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
         require(windowOpen, "Window closed");
         // forge-lint: disable-next-line(block-timestamp)
         require(block.timestamp <= windowCloseTime, "Window expired");
-        require(nxlAmount > 0, "Amount=0");
+        require(nxlAmount != 0, "Amount=0");
 
         // FIX 3: Limit redemption to snapshot balance at window open
         uint256 snapshotBalance = nxlToken.balanceOfAt(msg.sender, windowSnapshotId);
@@ -307,7 +307,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
         require(alreadyRedeemed + nxlAmount <= snapshotBalance, "Exceeds snapshot balance");
 
         uint256 usdtOut = (nxlAmount * redeemRateE18) / 1e18;
-        require(usdtOut > 0, "Too small");
+        require(usdtOut != 0, "Too small");
         require(stablecoin.balanceOf(address(this)) >= usdtOut, "Insufficient USDT");
 
         // Effects before interactions (CEI pattern)
@@ -328,7 +328,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
     function closeRedeemWindow() external nonReentrant onlyOwner {
         require(windowOpen, "Not open");
         // forge-lint: disable-next-line(block-timestamp)
-        require(block.timestamp > windowCloseTime, "Not expired");
+        require(block.timestamp >= windowCloseTime + 1, "Not expired");
         windowOpen = false;
         emit WindowClosed(nxlBurnedThisWindow);
     }
@@ -350,7 +350,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
     }
 
     function depositWBTC(uint256 amount) external nonReentrant {
-        require(amount > 0, "Amount=0");
+        require(amount != 0, "Amount=0");
         wbtc.safeTransferFrom(msg.sender, address(this), amount);
         emit WBTCDeposited(msg.sender, amount);
     }
@@ -361,14 +361,14 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
         onlyOwner
         returns (uint256 snapshotId)
     {
-        require(amount > 0, "Amount=0");
+        require(amount != 0, "Amount=0");
         require(wbtc.balanceOf(address(this)) >= reservedWBTC + amount, "Insufficient unreserved WBTC");
 
         snapshotId = nxlToken.snapshot();
 
         uint256 totalAt = nxlToken.totalSupplyAt(snapshotId);
         uint256 heldAt = nxlToken.balanceOfAt(address(nxlToken), snapshotId);
-        require(totalAt > heldAt, "No circulating supply at snapshot");
+        require(totalAt >= heldAt + 1, "No circulating supply at snapshot");
         uint256 circulatingAt = totalAt - heldAt;
 
         uint256 rpt = (amount * 1e18) / circulatingAt;
@@ -411,18 +411,18 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
         uint256 unpaid = unpaidByUser[snapshotId][msg.sender];
 
         uint256 owed = unpaid;
-        if (gross > claimedGross) owed += (gross - claimedGross);
+        if (gross >= claimedGross + 1) owed += (gross - claimedGross);
 
-        require(owed > 0, "Nothing to claim");
+        require(owed != 0, "Nothing to claim");
 
         uint256 available = wbtc.balanceOf(address(this));
-        uint256 toPay = owed > available ? available : owed;
+        uint256 toPay = owed >= available + 1 ? available : owed;
         uint256 remaining = owed - toPay;
 
         claimedByUserGross[snapshotId][msg.sender] = gross;
         unpaidByUser[snapshotId][msg.sender] = remaining;
 
-        if (toPay > 0) {
+        if (toPay != 0) {
             s.claimedWBTC += toPay;
 
             if (reservedWBTC >= toPay) reservedWBTC -= toPay;
@@ -436,7 +436,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
 
     function fundStakingWBTC(uint256 amount) external nonReentrant onlyOwner {
         require(address(staking) != address(0), "Staking not set");
-        require(amount > 0, "Amount=0");
+        require(amount != 0, "Amount=0");
 
         uint256 bal = wbtc.balanceOf(address(this));
         require(bal >= reservedWBTC + amount, "Not enough unreserved WBTC");

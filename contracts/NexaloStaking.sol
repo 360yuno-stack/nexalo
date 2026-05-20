@@ -80,7 +80,7 @@ contract NexaloStaking is ReentrancyGuard, Ownable2Step {
      * @dev Si no hay stakers, se guarda en buffer (no revierte).
      */
     function fundRewards(uint256 amount) external nonReentrant {
-        require(amount > 0, "Amount=0");
+        require(amount != 0, "Amount=0");
 
         // Pull WBTC from funder
         wbtc.safeTransferFrom(msg.sender, address(this), amount);
@@ -95,7 +95,7 @@ contract NexaloStaking is ReentrancyGuard, Ownable2Step {
     }
 
     function stake(uint256 amount) external nonReentrant {
-        require(amount > 0, "Amount=0");
+        require(amount != 0, "Amount=0");
 
         // primero distribuye buffer si ya hay stakers (por si justo se quedó pendiente)
         _distributeBufferedIfPossible();
@@ -118,7 +118,7 @@ contract NexaloStaking is ReentrancyGuard, Ownable2Step {
     }
 
     function unstake(uint256 amount) external nonReentrant {
-        require(amount > 0, "Amount=0");
+        require(amount != 0, "Amount=0");
         UserInfo storage u = users[msg.sender];
         require(u.amount >= amount, "Insufficient staked");
 
@@ -147,9 +147,9 @@ contract NexaloStaking is ReentrancyGuard, Ownable2Step {
 
         // calcula el “nuevo pending” desde accRewardPerShareE18
         uint256 newPending = 0;
-        if (u.amount > 0) {
+        if (u.amount != 0) {
             uint256 accumulated = (u.amount * accRewardPerShareE18) / ACC;
-            if (accumulated > u.rewardDebt) {
+            if (accumulated >= u.rewardDebt + 1) {
                 newPending = accumulated - u.rewardDebt;
             }
         }
@@ -166,7 +166,7 @@ contract NexaloStaking is ReentrancyGuard, Ownable2Step {
         // guarda lo que queda como deuda
         u.unpaidRewards = totalOwed - toPay;
 
-        if (toPay > 0) {
+        if (toPay != 0) {
             u.totalClaimed += toPay;
             wbtc.safeTransfer(user, toPay);
             emit Claimed(user, toPay);
