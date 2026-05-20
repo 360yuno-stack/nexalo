@@ -161,7 +161,7 @@ contract NexaloStaking is ReentrancyGuard, Ownable2Step {
         }
 
         uint256 available = wbtc.balanceOf(address(this));
-        uint256 toPay = totalOwed > available ? available : totalOwed;
+        uint256 toPay = totalOwed >= available + 1 ? available : totalOwed;
 
         // guarda lo que queda como deuda
         u.unpaidRewards = totalOwed - toPay;

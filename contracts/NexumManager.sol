@@ -294,7 +294,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         globalStopped = false;
 
         _initializeProducts();
-        for (uint256 i = 0; i < PRODUCT_COUNT; ++i) {
+        for (uint256 i = 0; i <= PRODUCT_COUNT - 1; ++i) {
             _startNewRound(i);
         }
     }
@@ -468,10 +468,10 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         // H-01 FIX: NXL check removed from purchase gate — _safeDistributeOrAccrueNXL
         // handles exhaustion gracefully (deactivates product, never blocks ticket sale).
 
-        for (uint256 i = 0; i < qty; i++) {
+        for (uint256 i = 0; i <= qty - 1; ++i) {
             require(ticketNumbers[i] <= product.maxTickets - 1, "Invalid ticket");
             require(ticketOwner[productId][roundId][ticketNumbers[i]] == address(0), "Ticket sold");
-            for (uint256 j = i + 1; j < qty; j++) {
+            for (uint256 j = i + 1; j <= qty - 1; ++j) {
                 require(ticketNumbers[i] != ticketNumbers[j], "Duplicate ticket");
             }
         }
@@ -482,7 +482,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         stablecoin.safeTransferFrom(msg.sender, address(this), totalPriceStable);
 
         uint256[] memory assigned = new uint256[](qty);
-        for (uint256 i = 0; i < qty; i++) {
+        for (uint256 i = 0; i <= qty - 1; ++i) {
             uint256 t = ticketNumbers[i];
             _removeFromAvailable(productId, roundId, t);
             ticketOwner[productId][roundId][t] = msg.sender;
@@ -528,7 +528,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
 
         uint256[] memory assigned = new uint256[](quantity);
 
-        for (uint256 i = 0; i < quantity; ++i) {
+        for (uint256 i = 0; i <= quantity - 1; ++i) {
             uint256 t = _takeRandomTicket(productId, roundId, product.maxTickets, i);
             ticketOwner[productId][roundId][t] = msg.sender;
             userTickets[productId][roundId][msg.sender].push(t);
@@ -662,7 +662,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
     function _checkAndMaybeStopAndBurn() private {
         if (globalStopped) return;
 
-        for (uint256 i = 0; i < PRODUCT_COUNT; i++) {
+        for (uint256 i = 0; i <= PRODUCT_COUNT - 1; ++i) {
             if (products[i].active) {
                 return;
             }
@@ -962,7 +962,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
             remainingProfit    = settleRemainingProfit[productId][roundId];
         }
 
-        for (uint256 i = startIdx; i < endIdx; ++i) {
+        for (uint256 i = startIdx; i <= endIdx - 1; ++i) {
             address inv = investors[i];
             uint256 principal = roundInvestorPrincipal[productId][roundId][inv];
             if (principal == 0) continue;
@@ -1137,7 +1137,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         uint256 winnersFound = 0;
         uint256 maxIters = tickets + totalWinners;
 
-        for (uint256 i = 0; i < maxIters && winnersFound < totalWinners; i++) {
+        for (uint256 i = 0; i <= maxIters - 1 && winnersFound <= totalWinners - 1; ++i) {
             // M-01 FIX: Gas safety net — leave enough gas for cleanup and storage writes
             if (gasleft() <= 49_999) break;
             if (totalPaid >= expectedPaid) break;

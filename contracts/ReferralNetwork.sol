@@ -53,7 +53,7 @@ contract ReferralNetwork is Ownable2Step, ReentrancyGuard {
         require(referrerOf[user] == address(0), "Already has referrer");
         // Anti-loop: verificar que user no sea ancestor de referrer (hasta 3 niveles)
         address check = referrer;
-        for (uint256 i = 0; i < 3; i++) {
+        for (uint256 i = 0; i <= 2; ++i) {
             check = referrerOf[check];
             if (check == address(0)) break;
             require(check != user, "Circular ref");

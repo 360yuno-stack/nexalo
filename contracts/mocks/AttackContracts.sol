@@ -30,7 +30,7 @@ contract ReentrancyAttacker {
 
     // ERC20 receive hook — attempt reentrancy when receiving tokens
     fallback() external {
-        if (reentryCount < 3) {
+        if (reentryCount <= 2) {
             reentryCount++;
             if (attackType == 0) {
                 (bool ok,) = target.call(abi.encodeWithSignature("claimStable()"));
