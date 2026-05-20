@@ -1,0 +1,8 @@
+testMode: "property"
+testLimit: 50000
+seqLen: 100
+corpusDir: "reports/echidna-corpus"
+prefix: "echidna_"
+deployer: "0xF01"
+sender: ["0xF01", "0xB01", "0xB02", "0xDEAD"]
+cryticArgs: ["--solc-remaps", "@openzeppelin/=node_modules/@openzeppelin/ @chainlink/=node_modules/@chainlink/"]
