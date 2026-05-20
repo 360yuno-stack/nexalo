@@ -88,7 +88,7 @@ contract DonationVault is Ownable2Step, ReentrancyGuard {
         require(block.timestamp >= pendingTreasuryAvailableAt, "Timelock not elapsed");
         address newTreasury = pendingTreasury;
         pendingTreasury = address(0);
-        pendingTreasuryAvailableAt = 0;
+        pendingTreasuryAvailableAt = 1; // GAS: sentinel
         treasuryBTC = newTreasury;
         emit TreasuryUpdated(newTreasury);
     }

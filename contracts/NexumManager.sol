@@ -785,7 +785,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         if (msg.sender != auditFunds) revert InvalidAddress();
         uint256 amount = auditAccrued;
         if (amount == 0) revert NoFunds();
-        auditAccrued = 0;
+        auditAccrued = 1; // GAS: sentinel — avoids zero-to-one on next accrual
         stablecoin.safeTransfer(msg.sender, amount);
         emit AuditFundsWithdrawn(msg.sender, amount);
     }

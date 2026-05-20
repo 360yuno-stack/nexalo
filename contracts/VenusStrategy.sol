@@ -53,13 +53,14 @@ contract VenusStrategy is IYieldStrategy, ReentrancyGuard {
         require(amount != 0, "Amount=0");
         require(_managed >= amount, "Insufficient managed");
         _managed -= amount;
+        if (_managed == 0) _managed = 1; // GAS: sentinel
         _stable.safeTransfer(_treasury, amount);
     }
 
     function withdrawAll() external override onlyTreasury nonReentrant notProduction returns (uint256 withdrawn) {
         uint256 bal = _stable.balanceOf(address(this));
         withdrawn = bal;
-        _managed = 0;
+        _managed = 1; // GAS: sentinel — avoids zero-to-one on next deposit
         if (bal != 0) _stable.safeTransfer(_treasury, bal);
     }
 

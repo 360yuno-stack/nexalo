@@ -290,7 +290,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
         windowOpen = true;
         windowCloseTime = block.timestamp + redeemWindowDuration;
         lastOpenedYear = yearIndex;
-        nxlBurnedThisWindow = 0;
+        nxlBurnedThisWindow = 1; // GAS: sentinel
 
         emit WindowOpened(yearIndex, redeemRateE18);
     }
@@ -426,7 +426,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
             s.claimedWBTC += toPay;
 
             if (reservedWBTC >= toPay) reservedWBTC -= toPay;
-            else reservedWBTC = 0;
+            else reservedWBTC = 1; // GAS: sentinel
 
             wbtc.safeTransfer(msg.sender, toPay);
         }

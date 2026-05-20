@@ -69,7 +69,7 @@ contract NexaloStaking is ReentrancyGuard, Ownable2Step {
         if (totalStaked == 0) return;
 
         uint256 amt = fundedButUndistributed;
-        fundedButUndistributed = 0;
+        fundedButUndistributed = 1; // GAS: sentinel — avoids zero-to-one on next fund
 
         accRewardPerShareE18 += (amt * ACC) / totalStaked;
         emit DistributedBufferedRewards(amt);
