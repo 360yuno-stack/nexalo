@@ -98,7 +98,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
 
     uint256 public auditAccrued;
 
-    VRFCoordinatorV2Interface public immutable vrfCoordinator;
+    VRFCoordinatorV2Interface public immutable s_vrfCoordinator;
     uint64 public immutable subscriptionId;
     bytes32 public immutable keyHash;
 
@@ -173,12 +173,12 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
     event NXLRewardsExhausted(uint256 indexed productId);
 
     event AuditFundsWithdrawn(address indexed to, uint256 amount);
-    event AuditFundsSet(address auditFunds);
+    event AuditFundsSet(address indexed auditFunds);
 
     event StuckRoundResolved(uint256 indexed productId, uint256 indexed roundId, uint256 newRequestId);
     event StuckRoundPaused(uint256 indexed productId, uint256 indexed roundId);
 
-    event EcosystemAddressesSet(address treasuryBTC, address referralNetwork, address ambassadorRegistry);
+    event EcosystemAddressesSet(address indexed treasuryBTC, address indexed referralNetwork, address indexed ambassadorRegistry);
     event AutonomyFinalized();
 
     event ClaimAccrued(address indexed user, uint256 amount);
@@ -188,7 +188,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
     event NXLClaimed(address indexed user, uint256 amount);
     event NXLPartialAccrued(address indexed user, uint256 requested, uint256 accrued);
 
-    event NXLTokenTreasuryConfigured(address treasury);
+    event NXLTokenTreasuryConfigured(address indexed treasury);
 
     event InstantRewardsDistributed(uint256 indexed productId, uint256 indexed roundId, uint256 totalPaid);
     event GlobalStoppedAndNXLBurned(uint256 burnedAmount);
@@ -270,7 +270,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         require(_auditFunds != address(0), "Invalid auditFunds");
         require(_pauseGuardian != address(0), "Invalid pauseGuardian");
 
-        vrfCoordinator = VRFCoordinatorV2Interface(_vrfCoordinator);
+        s_vrfCoordinator = VRFCoordinatorV2Interface(_vrfCoordinator);
         subscriptionId = _subscriptionId;
         keyHash = _keyHash;
 
@@ -795,7 +795,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         require(!round.vrfRequested, "VRF already requested");
         require(round.ticketsSold == products[productId].maxTickets, "Round not full");
 
-        uint256 requestId = vrfCoordinator.requestRandomWords(
+        uint256 requestId = s_vrfCoordinator.requestRandomWords(
             keyHash,
             subscriptionId,
             REQUEST_CONFIRMATIONS,
@@ -897,7 +897,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
         require(round.ticketsSold == product.maxTickets, "Round not full");
 
         // Retry VRF instead of using manipulable block variables
-        try vrfCoordinator.requestRandomWords(
+        try s_vrfCoordinator.requestRandomWords(
             keyHash,
             subscriptionId,
             REQUEST_CONFIRMATIONS,

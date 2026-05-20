@@ -87,19 +87,19 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
     mapping(uint256 => mapping(address => uint256)) public unpaidByUser;
 
     event FundsReceived(uint256 amount);
-    event StrategySet(address aave, address venus);
-    event StrategyActivated(address strategy);
-    event DepositedToStrategy(address strategy, uint256 amount);
-    event WithdrawnFromStrategy(address strategy, uint256 amount);
-    event Harvested(address strategy, uint256 gained);
+    event StrategySet(address indexed aave, address indexed venus);
+    event StrategyActivated(address indexed strategy);
+    event DepositedToStrategy(address indexed strategy, uint256 amount);
+    event WithdrawnFromStrategy(address indexed strategy, uint256 amount);
+    event Harvested(address indexed strategy, uint256 gained);
 
     event WindowOpened(uint256 yearIndex, uint256 redeemRateE18);
     event Redeemed(address indexed user, uint256 nxlIn, uint256 usdtOut);
     event WindowClosed(uint256 burned);
 
-    event AuditFundsSet(address auditFunds);
+    event AuditFundsSet(address indexed auditFunds);
 
-    event StakingSet(address staking);
+    event StakingSet(address indexed staking);
     event WBTCDeposited(address indexed from, uint256 amount);
 
     event HolderRewardsSnapshotted(

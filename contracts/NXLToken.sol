@@ -221,12 +221,14 @@ contract NXLToken is ERC20 {
         uint256 bal = balanceOf(account);
         // uint208 safe: max balance = 100M * 1e18 = 1e26 < 2^208 (~4e62)
         // forge-lint: disable-next-line(unsafe-typecast)
+        // slither-disable-next-line unused-return
         _balanceCheckpoints[account].push(uint48(block.number), uint208(bal));
     }
 
     function _writeTotalSupplyCheckpoint() private {
         uint256 ts = totalSupply();
         // forge-lint: disable-next-line(unsafe-typecast)
+        // slither-disable-next-line unused-return
         _totalSupplyCheckpoints.push(uint48(block.number), uint208(ts));
     }
 }
