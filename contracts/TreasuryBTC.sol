@@ -93,7 +93,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
     event WithdrawnFromStrategy(address strategy, uint256 amount);
     event Harvested(address strategy, uint256 gained);
 
-    event WindowOpened(uint256 yearIndex, uint256 closeTime, uint256 redeemRateE18);
+    event WindowOpened(uint256 yearIndex, uint256 redeemRateE18);
     event Redeemed(address indexed user, uint256 nxlIn, uint256 usdtOut);
     event WindowClosed(uint256 burned);
 
@@ -292,7 +292,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
         lastOpenedYear = yearIndex;
         nxlBurnedThisWindow = 0;
 
-        emit WindowOpened(yearIndex, windowCloseTime, redeemRateE18);
+        emit WindowOpened(yearIndex, redeemRateE18);
     }
 
     function redeem(uint256 nxlAmount) external nonReentrant {

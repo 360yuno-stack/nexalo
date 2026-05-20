@@ -72,14 +72,14 @@ contract DonationVault is Ownable2Step, ReentrancyGuard {
     uint256 public pendingTreasuryAvailableAt;
     uint256 public constant TREASURY_TIMELOCK = 2 days;
 
-    event TreasuryUpdateProposed(address indexed newTreasury, uint256 availableAt);
+    event TreasuryUpdateProposed(address indexed newTreasury);
     event TreasuryUpdated(address indexed newTreasury);
 
     function proposeTreasuryUpdate(address newTreasury) external onlyOwner {
         require(newTreasury != address(0), "Invalid treasury");
         pendingTreasury = newTreasury;
         pendingTreasuryAvailableAt = block.timestamp + TREASURY_TIMELOCK;
-        emit TreasuryUpdateProposed(newTreasury, pendingTreasuryAvailableAt);
+        emit TreasuryUpdateProposed(newTreasury);
     }
 
     function executeTreasuryUpdate() external onlyOwner {
