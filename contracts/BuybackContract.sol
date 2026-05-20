@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.20;
+pragma solidity 0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title BuybackContract
+ * @author Nexalo Team
  * @dev Vault de acumulación para buyback de NXL.
  */
-contract BuybackContract is Ownable, ReentrancyGuard {
+contract BuybackContract is Ownable2Step, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable stablecoin;
@@ -40,7 +41,7 @@ contract BuybackContract is Ownable, ReentrancyGuard {
         emit FundsReceived(msg.sender, delta);
     }
 
-    function spend(address to, uint256 amount) external onlyOwner nonReentrant {
+    function spend(address to, uint256 amount) external nonReentrant onlyOwner {
         require(to != address(0), "Invalid to");
         require(amount > 0, "Amount must be > 0");
         require(stablecoin.balanceOf(address(this)) >= amount, "Insufficient balance");

@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.20;
+pragma solidity 0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
- * Red de referidos (5/3/2) con pagos pull.
+ * @title ReferralNetwork
+ * @author Nexalo Team
+ * @notice Red de referidos (5/3/2) con pagos pull.
  */
-contract ReferralNetwork is Ownable, ReentrancyGuard {
+contract ReferralNetwork is Ownable2Step, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable stablecoin;
@@ -66,7 +68,7 @@ contract ReferralNetwork is Ownable, ReentrancyGuard {
         l3 = l2 == address(0) ? address(0) : referrerOf[l2];
     }
 
-    function distributeCommissions(address buyer, uint256 referralBudget) external onlyNexumManager nonReentrant {
+    function distributeCommissions(address buyer, uint256 referralBudget) external nonReentrant onlyNexumManager {
         require(buyer != address(0), "Invalid buyer");
         require(referralBudget > 0, "Budget=0");
 

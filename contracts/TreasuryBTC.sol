@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.20;
+pragma solidity 0.8.20;
 
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -23,12 +23,13 @@ interface INexaloStakingWBTC {
 }
 
 /**
- * TreasuryBTC:
- * - Recibe stable, strategies Aave/Venus y ventana anual redeem NXL->USDT
- * - Rewards mensuales WBTC holders NXL (snapshot + claim)
- * - Best-effort claim en WBTC
+ * @title TreasuryBTC
+ * @author Nexalo Team
+ * @notice Treasury contract: stablecoin management, yield strategies, WBTC rewards
+ * @dev Receives stable, manages Aave/Venus strategies, annual redeem window NXL→USDT,
+ *      monthly WBTC rewards for NXL holders (snapshot + claim)
  */
-contract TreasuryBTC is ReentrancyGuard, Ownable {
+contract TreasuryBTC is ReentrancyGuard, Ownable2Step {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable stablecoin;
@@ -183,7 +184,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
         emit AuditFundsSet(_auditFunds);
     }
 
-    function setStrategies(address _aave, address _venus) external onlyOwner nonReentrant {
+    function setStrategies(address _aave, address _venus) external nonReentrant onlyOwner {
         require(address(strategyAave) == address(0) && address(strategyVenus) == address(0), "Already set");
         require(_aave != address(0) && _venus != address(0), "Invalid");
 
@@ -201,13 +202,13 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
         emit StrategyActivated(address(activeStrategy));
     }
 
-    function activateStrategy(bool useAave) external onlyOwner nonReentrant {
+    function activateStrategy(bool useAave) external nonReentrant onlyOwner {
         require(address(strategyAave) != address(0), "Strategies not set");
         activeStrategy = useAave ? strategyAave : strategyVenus;
         emit StrategyActivated(address(activeStrategy));
     }
 
-    function depositToStrategy(uint256 amount) external onlyOwner nonReentrant {
+    function depositToStrategy(uint256 amount) external nonReentrant onlyOwner {
         require(address(activeStrategy) != address(0), "No strategy");
         require(amount > 0, "Amount=0");
         require(stablecoin.balanceOf(address(this)) >= amount, "Insufficient balance");
@@ -223,7 +224,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
         emit DepositedToStrategy(address(activeStrategy), amount);
     }
 
-    function withdrawFromStrategy(uint256 amount) external onlyOwner nonReentrant {
+    function withdrawFromStrategy(uint256 amount) external nonReentrant onlyOwner {
         require(address(activeStrategy) != address(0), "No strategy");
         require(amount > 0, "Amount=0");
 
@@ -235,7 +236,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
         emit WithdrawnFromStrategy(address(activeStrategy), amount);
     }
 
-    function withdrawAllFromStrategy() external onlyOwner nonReentrant {
+    function withdrawAllFromStrategy() external nonReentrant onlyOwner {
         require(address(activeStrategy) != address(0), "No strategy");
         uint256 got = activeStrategy.withdrawAll();
         totalWithdrawnFromStrat += got;
@@ -243,7 +244,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
         emit WithdrawnFromStrategy(address(activeStrategy), got);
     }
 
-    function harvest() external onlyOwner nonReentrant returns (uint256 gained) {
+    function harvest() external nonReentrant onlyOwner returns (uint256 gained) {
         require(address(activeStrategy) != address(0), "No strategy");
         gained = activeStrategy.harvest();
         if (gained > 0) {
@@ -356,8 +357,8 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
 
     function snapshotAndAllocateHolderRewards(uint256 amount)
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
         returns (uint256 snapshotId)
     {
         require(amount > 0, "Amount=0");
@@ -433,7 +434,7 @@ contract TreasuryBTC is ReentrancyGuard, Ownable {
         emit HolderClaimedBestEffort(msg.sender, snapshotId, toPay, remaining);
     }
 
-    function fundStakingWBTC(uint256 amount) external onlyOwner nonReentrant {
+    function fundStakingWBTC(uint256 amount) external nonReentrant onlyOwner {
         require(address(staking) != address(0), "Staking not set");
         require(amount > 0, "Amount=0");
 

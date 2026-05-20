@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.20;
+pragma solidity 0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -36,7 +36,13 @@ interface IAmbassadorDistribute {
     function distributeFunds() external;
 }
 
-contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
+/**
+ * @title NexumManager
+ * @author Nexalo Team
+ * @notice Core contract for Nexalo ecosystem: lottery, VRF, referrals, staking
+ * @dev Handles ticket purchases, VRF-based winner selection, fund distribution
+ */
+contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable2Step {
     using SafeERC20 for IERC20;
 
     struct NexumProduct {
@@ -252,7 +258,7 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         address _pauseGuardian
     )
         VRFConsumerBaseV2(_vrfCoordinator)
-        Ownable(msg.sender)
+        Ownable(msg.sender) // Ownable2Step inherits Ownable — pass initialOwner here
     {
         require(_vrfCoordinator != address(0), "Invalid vrfCoordinator");
         require(_stablecoin != address(0), "Invalid stablecoin");
@@ -665,7 +671,8 @@ contract NexumManager is VRFConsumerBaseV2, ReentrancyGuard, Ownable {
         uint256 available = nxlToken.getAvailableRewards();
         if (available > 0) {
             try nxlToken.burnUndistributed(available) {
-            } catch {
+            } catch (bytes memory reason) {
+                emit SettlementFailed(0, 0, reason); // FIX: log catch reason instead of silencing
             }
             emit GlobalStoppedAndNXLBurned(available);
         }

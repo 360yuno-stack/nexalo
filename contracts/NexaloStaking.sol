@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.20;
+pragma solidity 0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /**
  * @title NexaloStaking
+ * @author Nexalo Team
  * @notice Stake NXL, rewards en WBTC (funded, pro-rata).
  * @dev Fix auditoría [M-09]:
  *  - Nunca revierte stake/unstake/claim por falta de WBTC.
  *  - Si Treasury fondea cuando no hay stakers, se guarda en buffer y se distribuye luego.
  */
-contract NexaloStaking is ReentrancyGuard, Ownable {
+contract NexaloStaking is ReentrancyGuard, Ownable2Step {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable nxl;

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.20;
+pragma solidity 0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title AmbassadorRegistry
+ * @author Nexalo Team
  * @notice Gestiona el programa de embajadores de NEXALO.
  * @dev El 5% de cada compra de tickets se distribuye entre embajadores activos
  *      usando un modelo acum-per-active (pull payments).
@@ -22,7 +23,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  *   - Pull payments (sin push): no puede bloquearse por blacklist.
  *   - Las rewards se cristalizan al desactivar un embajador (no se pierden).
  */
-contract AmbassadorRegistry is Ownable, ReentrancyGuard {
+contract AmbassadorRegistry is Ownable2Step, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable stablecoin;
@@ -90,7 +91,7 @@ contract AmbassadorRegistry is Ownable, ReentrancyGuard {
         emit AmbassadorRegistered(msg.sender, name);
     }
 
-    function setAmbassadorStatus(address ambassador, bool active) external onlyOwner nonReentrant {
+    function setAmbassadorStatus(address ambassador, bool active) external nonReentrant onlyOwner {
         require(ambassador != address(0), "Invalid address");
         Ambassador storage a = ambassadors[ambassador];
         require(bytes(a.name).length > 0, "Not registered");

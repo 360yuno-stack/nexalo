@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.20;
 
 /// @dev Minimal stub that satisfies NXLToken's code.length > 0 check.
 ///      Used in tests to bootstrap the NXL-Manager circular dependency.

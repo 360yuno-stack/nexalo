@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.20;
+pragma solidity 0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
 
 /**
  * @title NXLToken
+ * @author Nexalo Team
  * @notice Token de gobernanza y recompensas del ecosistema NEXALO.
  * @dev Supply total: 100M NXL.
  *   - 96M reservados como rewards (mantenidos por el contrato).
