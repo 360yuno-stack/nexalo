@@ -63,6 +63,14 @@ export function Header() {
             </li>
             <li>
               <Link
+                href="/docs"
+                className="text-[0.85rem] font-semibold px-3 py-1.5 rounded-lg border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 transition-all"
+              >
+                Docs
+              </Link>
+            </li>
+            <li>
+              <Link
                 href="/whitepaper"
                 className="text-[0.85rem] font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-primary)]/30 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-all"
               >

@@ -118,6 +118,9 @@ export default function WhitepaperPage() {
             <Link href="/" className="text-blue-400 hover:text-blue-300 text-sm transition-colors">
               ← Volver al Protocolo
             </Link>
+            <Link href="/docs" className="text-emerald-400 hover:text-emerald-300 text-sm transition-colors">
+              Docs Técnicos →
+            </Link>
             <a href="https://bscscan.com" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white text-sm transition-colors">
               Verificar en BSCScan →
             </a>
